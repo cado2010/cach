@@ -5,9 +5,13 @@ namespace cachCore.models
 {
     public class Knight : Piece
     {
-        public Knight(ItemColor pieceColor, Position position) :
+        public Knight(ItemColor pieceColor, Position position, bool isTemp = false) :
             base(PieceType.Knight, pieceColor, position)
         {
+            if (isTemp)
+            {
+                ForgetTempPiece(this);
+            }
         }
 
         protected override Movement GetUnconstrainedMovement()

@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using cachCore.enums;
 using cachCore.exceptions;
+using cachCore.utils;
 
 namespace cachCore.models
 {
@@ -65,13 +66,30 @@ namespace cachCore.models
         /// <returns></returns>
         public bool IsInCheck(ItemColor pieceColor)
         {
-            bool inCheck = false;
-
             // see if King of given color can be attacked
-            // radiate out in all directions from current King pos and check if
-            // under attack
+            InCheckHelper helper = new InCheckHelper(this, pieceColor);
+            return helper.InCheck;
+        }
 
-            return inCheck;
+        public BoardSquare this[int row, int column]
+        {
+            get { return _board[row, column]; }
+        }
+
+        public BoardSquare this[Position pos]
+        {
+            get { return this[pos.Row, pos.Column]; }
+        }
+
+        /// <summary>
+        /// Returns list of current pieces of given color, type from map
+        /// </summary>
+        /// <param name="pieceColor"></param>
+        /// <param name="pieceType"></param>
+        /// <returns></returns>
+        public IList<Piece> GetPieces(ItemColor pieceColor, PieceType pieceType)
+        {
+            return _pieceMap[pieceColor][pieceType];
         }
 
         /// <summary>
@@ -211,7 +229,7 @@ namespace cachCore.models
         /// </summary>
         /// <param name="piece"></param>
         /// <returns></returns>
-        public Movement GetMovement(Piece piece)
+        private Movement GetMovement(Piece piece)
         {
             Movement m = piece.GetMovement();
 
@@ -262,16 +280,6 @@ namespace cachCore.models
             }
 
             return new Movement(m.Start, constrainedPaths, true);
-        }
-
-        public BoardSquare this[int row, int column]
-        {
-            get { return _board[row, column]; }
-        }
-
-        public BoardSquare this[Position pos]
-        {
-            get { return this[pos.Row, pos.Column]; }
         }
     }
 }

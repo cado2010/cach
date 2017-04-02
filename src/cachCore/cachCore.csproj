@@ -54,6 +54,7 @@
     <Compile Include="models\BoardHistoryItem.cs" />
     <Compile Include="models\BoardHistory.cs" />
     <Compile Include="models\BoardSquare.cs" />
+    <Compile Include="utils\InCheckHelper.cs" />
     <Compile Include="utils\MoveInputParser.cs" />
     <Compile Include="models\Movement.cs" />
     <Compile Include="models\Pawn.cs" />

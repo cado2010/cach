@@ -34,6 +34,11 @@ namespace cachCore.models
             return _pieceMap[id];
         }
 
+        protected static void ForgetTempPiece(Piece piece)
+        {
+            _pieceMap.Remove(piece.Id);
+        }
+
         protected Piece(PieceType pieceType, ItemColor pieceColor, Position position)
         {
             PieceType = pieceType;
@@ -72,13 +77,7 @@ namespace cachCore.models
             IsAlive = false;
         }
 
-        /// <summary>
-        /// Implemented per derived piece
-        /// </summary>
-        /// <returns></returns>
-        protected abstract Movement GetUnconstrainedMovement();
-
-        protected IList<Position> GetLeftPath()
+        public IList<Position> GetLeftPath()
         {
             IList<Position> path = new List<Position>();
             Position n = Position.Left;
@@ -91,7 +90,7 @@ namespace cachCore.models
             return path;
         }
 
-        protected IList<Position> GetRightPath()
+        public IList<Position> GetRightPath()
         {
             IList<Position> path = new List<Position>();
             Position n = Position.Right;
@@ -104,7 +103,7 @@ namespace cachCore.models
             return path;
         }
 
-        protected IList<Position> GetUpPath()
+        public IList<Position> GetUpPath()
         {
             IList<Position> path = new List<Position>();
             Position n = Position.Up;
@@ -117,7 +116,7 @@ namespace cachCore.models
             return path;
         }
 
-        protected IList<Position> GetDownPath()
+        public IList<Position> GetDownPath()
         {
             IList<Position> path = new List<Position>();
             Position n = Position.Down;
@@ -130,7 +129,7 @@ namespace cachCore.models
             return path;
         }
 
-        protected IList<Position> GetLeftUpPath()
+        public IList<Position> GetLeftUpPath()
         {
             IList<Position> path = new List<Position>();
             Position n = Position.LeftUp;
@@ -143,7 +142,7 @@ namespace cachCore.models
             return path;
         }
 
-        protected IList<Position> GetRightUpPath()
+        public IList<Position> GetRightUpPath()
         {
             IList<Position> path = new List<Position>();
             Position n = Position.RightUp;
@@ -156,7 +155,7 @@ namespace cachCore.models
             return path;
         }
 
-        protected IList<Position> GetLeftDownPath()
+        public IList<Position> GetLeftDownPath()
         {
             IList<Position> path = new List<Position>();
             Position n = Position.LeftDown;
@@ -169,7 +168,7 @@ namespace cachCore.models
             return path;
         }
 
-        protected IList<Position> GetRightDownPath()
+        public IList<Position> GetRightDownPath()
         {
             IList<Position> path = new List<Position>();
             Position n = Position.RightDown;
@@ -181,6 +180,12 @@ namespace cachCore.models
 
             return path;
         }
+
+        /// <summary>
+        /// Implemented per derived piece
+        /// </summary>
+        /// <returns></returns>
+        protected abstract Movement GetUnconstrainedMovement();
 
         private void CheckSanity()
         {
