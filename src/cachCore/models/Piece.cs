@@ -34,12 +34,7 @@ namespace cachCore.models
             return _pieceMap[id];
         }
 
-        protected static void ForgetTempPiece(Piece piece)
-        {
-            _pieceMap.Remove(piece.Id);
-        }
-
-        protected Piece(PieceType pieceType, ItemColor pieceColor, Position position)
+        protected Piece(PieceType pieceType, ItemColor pieceColor, Position position, bool isTemp = false)
         {
             PieceType = pieceType;
             PieceColor = pieceColor;
@@ -48,8 +43,11 @@ namespace cachCore.models
 
             CheckSanity();
 
-            Id = System.Guid.NewGuid().ToString();
-            _pieceMap[Id] = this;
+            if (!isTemp)
+            {
+                Id = System.Guid.NewGuid().ToString();
+                _pieceMap[Id] = this;
+            }
         }
 
         /// <summary>
