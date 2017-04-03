@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using Newtonsoft.Json;
 using cachCore.enums;
 using cachCore.exceptions;
 using cachCore.utils;
@@ -10,19 +13,23 @@ namespace cachCore.models
         /// <summary>
         /// Main board of squares
         /// </summary>
+        [JsonProperty]
         private BoardSquare[,] _board;
 
         /// <summary>
         /// Used for move begin/commit phases - this is not game history
         /// </summary>
+        [JsonProperty]
         private BoardHistory _boardHistory;
 
         /// <summary>
         /// map: <PieceColor> -> { map: <PieceType> -> IList<Piece> }
         /// where King list must be [1] size
         /// </summary>
+        [JsonIgnore]
         private Dictionary<ItemColor, Dictionary<PieceType, IList<Piece>>> _pieceMap;
 
+        [JsonProperty]
         private int _previousHistoryLevel;
 
         public Board()
@@ -67,8 +74,10 @@ namespace cachCore.models
         public bool IsInCheck(ItemColor pieceColor)
         {
             // see if King of given color can be attacked
-            InCheckHelper helper = new InCheckHelper(this, pieceColor);
-            return helper.InCheck;
+            King king = GetPieces(pieceColor, PieceType.King)[0] as King;
+
+            InCheckHelper helper = new InCheckHelper(this, pieceColor, king.Position);
+            return helper.IsInCheck;
         }
 
         public BoardSquare this[int row, int column]
@@ -90,6 +99,33 @@ namespace cachCore.models
         public IList<Piece> GetPieces(ItemColor pieceColor, PieceType pieceType)
         {
             return _pieceMap[pieceColor][pieceType];
+        }
+
+        /// <summary>
+        /// Saves current board into given file path in JSON format
+        /// </summary>
+        /// <param name="path"></param>
+        public void WriteToFile(string path)
+        {
+            try
+            {
+                string conv = JsonConvert.SerializeObject(this);
+                File.WriteAllText(path, conv);
+            }
+            catch (Exception)
+            {
+                // TODO: log exception
+            }
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public static Board ReadFromFile(string path)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -116,7 +152,7 @@ namespace cachCore.models
 
         private void InitAndPlacePieces(ItemColor pieceColor)
         {
-            int row = pieceColor == ItemColor.Black ? 7 : 0;
+            int row = BoardUtils.GetPieceStartRow(pieceColor);
 
             List<Piece> king = new List<Piece>() { new King(pieceColor, new Position(row, 4)) };
             this[row, 4].SetPiece(king[0]);
@@ -149,7 +185,7 @@ namespace cachCore.models
             this[row, 6].SetPiece(knights[1]);
 
             // adjust row for pawns
-            row = pieceColor == ItemColor.Black ? 6 : 1;
+            row = BoardUtils.GetPawnStartRow(pieceColor);
 
             // create and place pawns
             List<Piece> pawns = new List<Piece>();
@@ -202,8 +238,13 @@ namespace cachCore.models
                 previousPiece.Kill();
             }
 
+            // remove piece from previous square
+            this[piece.Position].RemovePiece();
+
             // move piece to new pos
             piece.MoveTo(target);
+
+            // set piece in current square
             square.SetPiece(piece);
         }
 
@@ -241,7 +282,7 @@ namespace cachCore.models
                 List<Position> constrainedPath = new List<Position>();
 
                 // prune path if blocked by own color (exclude)
-                // prune path if bloced by opponent color (include)
+                // prune path if blocked by opponent color (include)
                 foreach (var pos in path)
                 {
                     BoardSquare square = this[pos];

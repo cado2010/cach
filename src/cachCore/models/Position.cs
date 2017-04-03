@@ -1,5 +1,6 @@
 ﻿using System;
-using System.Text;
+using System.Collections.Generic;
+using Newtonsoft.Json;
 using cachCore.exceptions;
 
 namespace cachCore.models
@@ -24,11 +25,13 @@ namespace cachCore.models
             Column = column;
         }
 
+        [JsonIgnore]
         public static Position Invalid
         {
             get { return INVALID; }
         }
 
+        [JsonIgnore]
         public static int InvalidCoordinate
         {
             get { return -1; }
@@ -129,6 +132,7 @@ namespace cachCore.models
         /// <summary>
         /// All movement directions are relative to White
         /// </summary>
+        [JsonIgnore]
         public Position Up
         {
             get
@@ -137,6 +141,7 @@ namespace cachCore.models
             }
         }
 
+        [JsonIgnore]
         public Position Down
         {
             get
@@ -145,6 +150,7 @@ namespace cachCore.models
             }
         }
 
+        [JsonIgnore]
         public Position Left
         {
             get
@@ -153,6 +159,7 @@ namespace cachCore.models
             }
         }
 
+        [JsonIgnore]
         public Position Right
         {
             get
@@ -161,6 +168,7 @@ namespace cachCore.models
             }
         }
 
+        [JsonIgnore]
         public Position LeftUp
         {
             get
@@ -169,6 +177,7 @@ namespace cachCore.models
             }
         }
 
+        [JsonIgnore]
         public Position RightUp
         {
             get
@@ -177,6 +186,7 @@ namespace cachCore.models
             }
         }
 
+        [JsonIgnore]
         public Position LeftDown
         {
             get
@@ -185,12 +195,117 @@ namespace cachCore.models
             }
         }
 
+        [JsonIgnore]
         public Position RightDown
         {
             get
             {
                 return new Position(Row - 1, Column + 1);
             }
+        }
+
+        public IList<Position> GetLeftPath()
+        {
+            IList<Position> path = new List<Position>();
+            Position n = this.Left;
+            while (!n.IsOutOfBounds())
+            {
+                path.Add(n);
+                n = n.Left;
+            }
+
+            return path;
+        }
+
+        public IList<Position> GetRightPath()
+        {
+            IList<Position> path = new List<Position>();
+            Position n = this.Right;
+            while (!n.IsOutOfBounds())
+            {
+                path.Add(n);
+                n = n.Right;
+            }
+
+            return path;
+        }
+
+        public IList<Position> GetUpPath()
+        {
+            IList<Position> path = new List<Position>();
+            Position n = this.Up;
+            while (!n.IsOutOfBounds())
+            {
+                path.Add(n);
+                n = n.Up;
+            }
+
+            return path;
+        }
+
+        public IList<Position> GetDownPath()
+        {
+            IList<Position> path = new List<Position>();
+            Position n = this.Down;
+            while (!n.IsOutOfBounds())
+            {
+                path.Add(n);
+                n = n.Down;
+            }
+
+            return path;
+        }
+
+        public IList<Position> GetLeftUpPath()
+        {
+            IList<Position> path = new List<Position>();
+            Position n = this.LeftUp;
+            while (!n.IsOutOfBounds())
+            {
+                path.Add(n);
+                n = n.LeftUp;
+            }
+
+            return path;
+        }
+
+        public IList<Position> GetRightUpPath()
+        {
+            IList<Position> path = new List<Position>();
+            Position n = this.RightUp;
+            while (!n.IsOutOfBounds())
+            {
+                path.Add(n);
+                n = n.RightUp;
+            }
+
+            return path;
+        }
+
+        public IList<Position> GetLeftDownPath()
+        {
+            IList<Position> path = new List<Position>();
+            Position n = this.LeftDown;
+            while (!n.IsOutOfBounds())
+            {
+                path.Add(n);
+                n = n.LeftDown;
+            }
+
+            return path;
+        }
+
+        public IList<Position> GetRightDownPath()
+        {
+            IList<Position> path = new List<Position>();
+            Position n = this.RightDown;
+            while (!n.IsOutOfBounds())
+            {
+                path.Add(n);
+                n = n.RightDown;
+            }
+
+            return path;
         }
 
         public override string ToString()

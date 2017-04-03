@@ -4,22 +4,27 @@ using cachCore.models;
 
 namespace cachCore.utils
 {
+    /// <summary>
+    /// Helper that implements rules to determine if the King of given color and position is in Check
+    /// </summary>
     public class InCheckHelper
     {
         private Board _board;
         private ItemColor _pieceColor;
         private ItemColor _enemyColor;
+        private Position _kingPosition;
 
-        public InCheckHelper(Board board, ItemColor pieceColor)
+        public InCheckHelper(Board board, ItemColor pieceColor, Position kingPosition)
         {
             _board = board;
             _pieceColor = pieceColor;
+            _kingPosition = kingPosition;
             _enemyColor = pieceColor == ItemColor.Black ? ItemColor.White : ItemColor.Black;
 
-            InCheck = ComputeInCheck();
+            IsInCheck = ComputeInCheck();
         }
 
-        public bool InCheck { get; private set; }
+        public bool IsInCheck { get; private set; }
 
         /// <summary>
         /// Computes if the King of the given PieceColor is in Check - can be optimized by analyzing individual
@@ -30,15 +35,14 @@ namespace cachCore.utils
         {
             // radiate out in all directions from current King pos and check if
             // under attack
-            King king = _board.GetPieces(_pieceColor, PieceType.King)[0] as King;
 
             List<IList<Position>> paths = new List<IList<Position>>();
 
             // check straight paths for Queen or Rook
-            paths.Add(king.GetLeftPath());
-            paths.Add(king.GetRightPath());
-            paths.Add(king.GetUpPath());
-            paths.Add(king.GetDownPath());
+            paths.Add(_kingPosition.GetLeftPath());
+            paths.Add(_kingPosition.GetRightPath());
+            paths.Add(_kingPosition.GetUpPath());
+            paths.Add(_kingPosition.GetDownPath());
             if (CheckPathForEnemyPieceType(PieceType.Queen, paths) ||
                 CheckPathForEnemyPieceType(PieceType.Rook, paths))
             {
@@ -48,10 +52,10 @@ namespace cachCore.utils
             paths.Clear();
 
             // check diagonal paths for Queen or Bishop
-            paths.Add(king.GetLeftUpPath());
-            paths.Add(king.GetRightPath());
-            paths.Add(king.GetUpPath());
-            paths.Add(king.GetDownPath());
+            paths.Add(_kingPosition.GetLeftUpPath());
+            paths.Add(_kingPosition.GetRightPath());
+            paths.Add(_kingPosition.GetUpPath());
+            paths.Add(_kingPosition.GetDownPath());
             if (CheckPathForEnemyPieceType(PieceType.Queen, paths) ||
                 CheckPathForEnemyPieceType(PieceType.Bishop, paths))
             {
@@ -59,7 +63,7 @@ namespace cachCore.utils
             }
 
             // create a temporary Knight at the King position to check attack from an enemy Knight
-            Knight knight = new Knight(_enemyColor, king.Position, isTemp: true);
+            Knight knight = new Knight(_enemyColor, _kingPosition, isTemp: true);
 
             Movement m = knight.GetMovement();
             if (CheckPathForEnemyPieceType(PieceType.Knight, m.Paths))
@@ -70,8 +74,8 @@ namespace cachCore.utils
             // finally, check attack from Pawns
             if (_pieceColor == ItemColor.White)
             {
-                Position p0 = king.Position.LeftUp;
-                Position p1 = king.Position.RightUp;
+                Position p0 = _kingPosition.LeftUp;
+                Position p1 = _kingPosition.RightUp;
                 if (!p0.IsOutOfBounds() && _board[p0].IsOccupiedByPieceOfColor(ItemColor.Black) ||
                     !p1.IsOutOfBounds() && _board[p1].IsOccupiedByPieceOfColor(ItemColor.Black))
                 {
@@ -80,8 +84,8 @@ namespace cachCore.utils
             }
             else
             {
-                Position p0 = king.Position.LeftDown;
-                Position p1 = king.Position.RightDown;
+                Position p0 = _kingPosition.LeftDown;
+                Position p1 = _kingPosition.RightDown;
                 if (!p0.IsOutOfBounds() && _board[p0].IsOccupiedByPieceOfColor(ItemColor.White) ||
                     !p1.IsOutOfBounds() && _board[p1].IsOccupiedByPieceOfColor(ItemColor.White))
                 {
@@ -104,9 +108,14 @@ namespace cachCore.utils
             {
                 foreach (var pos in path)
                 {
-                    if (_board[pos].IsOccupiedByPieceOfColor(_pieceColor))
+                    if (_board[pos].IsOccupiedByPieceOfColor(_pieceColor) &&
+                        !_board[pos].IsOccupiedByPieceOfColorAndType(_pieceColor, PieceType.King))
                     {
-                        // break out of this path and check next path
+                        // own piece blocking, so break out of this path and check next path
+                        // note that while checking a given Position, own King cannot block -
+                        // this is possible because we use the same algorithm to determine possible
+                        // Check conditions during Castling where the square checked is NOT occupied
+                        // currently by the King
                         break;
                     }
 

@@ -1,6 +1,7 @@
 ﻿using NUnit.Framework;
 using cachCore.models;
 using cachCore.enums;
+using cachCore.utils;
 
 namespace cachCoreTests
 {
@@ -55,7 +56,7 @@ namespace cachCoreTests
 
         private void test_board_piece_types(ItemColor pieceColor)
         {
-            int row = pieceColor == ItemColor.Black ? 7 : 0;
+            int row = BoardUtils.GetPieceStartRow(pieceColor);
 
             Board board = new Board();
             Assert.IsTrue(board[row, 0].Piece.PieceType == PieceType.Rook);
@@ -67,7 +68,7 @@ namespace cachCoreTests
             Assert.IsTrue(board[row, 6].Piece.PieceType == PieceType.Knight);
             Assert.IsTrue(board[row, 7].Piece.PieceType == PieceType.Rook);
 
-            row = pieceColor == ItemColor.Black ? 6 : 1;
+            row = BoardUtils.GetPawnStartRow(pieceColor);
             for (int col = 0; col < 8; col++)
             {
                 Assert.IsTrue(board[row, col].Piece.PieceType == PieceType.Pawn);

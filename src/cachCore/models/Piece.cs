@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Newtonsoft.Json;
 using cachCore.enums;
 using cachCore.exceptions;
 
@@ -19,9 +20,12 @@ namespace cachCore.models
 
         public PieceType PieceType { get; private set; }
 
+        public bool HasMoved { get; private set; }
+
         /// <summary>
         /// Instance tracking map: <id> -> Piece
         /// </summary>
+        [JsonIgnore]
         private static Dictionary<string, Piece> _pieceMap;
 
         static Piece()
@@ -32,6 +36,11 @@ namespace cachCore.models
         public static Piece Get(string id)
         {
             return _pieceMap[id];
+        }
+
+        public static void Put(Piece piece)
+        {
+            _pieceMap[piece.Id] = piece;
         }
 
         protected Piece(PieceType pieceType, ItemColor pieceColor, Position position, bool isTemp = false)
@@ -67,116 +76,13 @@ namespace cachCore.models
         {
             CheckSanity();
             Position = position;
+            HasMoved = true;
         }
 
         public void Kill()
         {
             CheckSanity();
             IsAlive = false;
-        }
-
-        public IList<Position> GetLeftPath()
-        {
-            IList<Position> path = new List<Position>();
-            Position n = Position.Left;
-            while (!n.IsOutOfBounds())
-            {
-                path.Add(n);
-                n = n.Left;
-            }
-
-            return path;
-        }
-
-        public IList<Position> GetRightPath()
-        {
-            IList<Position> path = new List<Position>();
-            Position n = Position.Right;
-            while (!n.IsOutOfBounds())
-            {
-                path.Add(n);
-                n = n.Right;
-            }
-
-            return path;
-        }
-
-        public IList<Position> GetUpPath()
-        {
-            IList<Position> path = new List<Position>();
-            Position n = Position.Up;
-            while (!n.IsOutOfBounds())
-            {
-                path.Add(n);
-                n = n.Up;
-            }
-
-            return path;
-        }
-
-        public IList<Position> GetDownPath()
-        {
-            IList<Position> path = new List<Position>();
-            Position n = Position.Down;
-            while (!n.IsOutOfBounds())
-            {
-                path.Add(n);
-                n = n.Down;
-            }
-
-            return path;
-        }
-
-        public IList<Position> GetLeftUpPath()
-        {
-            IList<Position> path = new List<Position>();
-            Position n = Position.LeftUp;
-            while (!n.IsOutOfBounds())
-            {
-                path.Add(n);
-                n = n.LeftUp;
-            }
-
-            return path;
-        }
-
-        public IList<Position> GetRightUpPath()
-        {
-            IList<Position> path = new List<Position>();
-            Position n = Position.RightUp;
-            while (!n.IsOutOfBounds())
-            {
-                path.Add(n);
-                n = n.RightUp;
-            }
-
-            return path;
-        }
-
-        public IList<Position> GetLeftDownPath()
-        {
-            IList<Position> path = new List<Position>();
-            Position n = Position.LeftDown;
-            while (!n.IsOutOfBounds())
-            {
-                path.Add(n);
-                n = n.LeftDown;
-            }
-
-            return path;
-        }
-
-        public IList<Position> GetRightDownPath()
-        {
-            IList<Position> path = new List<Position>();
-            Position n = Position.RightDown;
-            while (!n.IsOutOfBounds())
-            {
-                path.Add(n);
-                n = n.RightDown;
-            }
-
-            return path;
         }
 
         /// <summary>

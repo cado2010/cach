@@ -14,14 +14,14 @@ namespace cachCore.models
         protected override Movement GetUnconstrainedMovement()
         {
             List<IList<Position>> paths = new List<IList<Position>>();
-            paths.Add(GetLeftPath());
-            paths.Add(GetRightPath());
-            paths.Add(GetUpPath());
-            paths.Add(GetDownPath());
-            paths.Add(GetLeftUpPath());
-            paths.Add(GetRightUpPath());
-            paths.Add(GetLeftDownPath());
-            paths.Add(GetRightDownPath());
+            paths.Add(Position.GetLeftPath());
+            paths.Add(Position.GetRightPath());
+            paths.Add(Position.GetUpPath());
+            paths.Add(Position.GetDownPath());
+            paths.Add(Position.GetLeftUpPath());
+            paths.Add(Position.GetRightUpPath());
+            paths.Add(Position.GetLeftDownPath());
+            paths.Add(Position.GetRightDownPath());
 
             return new Movement(Position, paths);
         }

@@ -16,6 +16,11 @@ namespace cachCore.models
             Piece = piece;
         }
 
+        public T GetPiece<T>() where T : Piece
+        {
+            return Piece as T;
+        }
+
         public bool IsOccupied()
         {
             return Piece != null;
@@ -24,6 +29,11 @@ namespace cachCore.models
         public bool IsOccupiedByPieceOfColor(ItemColor pieceColor)
         {
             return Piece != null && Piece.PieceColor == pieceColor;
+        }
+
+        public bool IsOccupiedByPieceOfColorAndType(ItemColor pieceColor, PieceType pieceType)
+        {
+            return Piece != null && Piece.PieceColor == pieceColor && Piece.PieceType == pieceType;
         }
 
         public void SetPiece(Piece piece)
