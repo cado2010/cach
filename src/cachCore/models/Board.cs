@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Newtonsoft.Json;
 using cachCore.enums;
 using cachCore.exceptions;
 using cachCore.utils;
-using System.Linq;
+using cachCore.rules;
 
 namespace cachCore.models
 {

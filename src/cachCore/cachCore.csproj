@@ -59,9 +59,9 @@
     <Compile Include="models\BoardHistory.cs" />
     <Compile Include="models\BoardSquare.cs" />
     <Compile Include="utils\BoardUtils.cs" />
-    <Compile Include="utils\CastleAttemptValidationHelper.cs" />
-    <Compile Include="utils\InMateHelper.cs" />
-    <Compile Include="utils\InCheckHelper.cs" />
+    <Compile Include="rules\CastleAttemptValidationHelper.cs" />
+    <Compile Include="rules\InMateHelper.cs" />
+    <Compile Include="rules\InCheckHelper.cs" />
     <Compile Include="utils\MoveInputParser.cs" />
     <Compile Include="models\Movement.cs" />
     <Compile Include="models\Pawn.cs" />

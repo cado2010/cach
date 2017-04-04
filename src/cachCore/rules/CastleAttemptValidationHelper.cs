@@ -2,8 +2,9 @@
 using cachCore.enums;
 using cachCore.exceptions;
 using cachCore.models;
+using cachCore.utils;
 
-namespace cachCore.utils
+namespace cachCore.rules
 {
     /// <summary>
     /// Helper that implements rules to determine if a Castle attempt is possible

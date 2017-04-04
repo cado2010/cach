@@ -2,7 +2,7 @@
 using cachCore.enums;
 using cachCore.models;
 
-namespace cachCore.utils
+namespace cachCore.rules
 {
     /// <summary>
     /// Helper that implements rules to determine if the King of given color and position is in Check or Stale Mate
