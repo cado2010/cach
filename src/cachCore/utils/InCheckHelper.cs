@@ -26,6 +26,8 @@ namespace cachCore.utils
 
         public bool IsInCheck { get; private set; }
 
+        public Piece Attacker { get; private set; }
+
         /// <summary>
         /// Computes if the King of the given PieceColor is in Check - can be optimized by analyzing individual
         /// paths instead of forming groups of paths
@@ -76,9 +78,14 @@ namespace cachCore.utils
             {
                 Position p0 = _kingPosition.LeftUp;
                 Position p1 = _kingPosition.RightUp;
-                if (!p0.IsOutOfBounds() && _board[p0].IsOccupiedByPieceOfColor(ItemColor.Black) ||
-                    !p1.IsOutOfBounds() && _board[p1].IsOccupiedByPieceOfColor(ItemColor.Black))
+                if (!p0.IsOutOfBounds() && _board[p0].IsOccupiedByPieceOfColor(ItemColor.Black))
                 {
+                    Attacker = _board[p0].Piece;
+                    return true;
+                }
+                else if (!p1.IsOutOfBounds() && _board[p1].IsOccupiedByPieceOfColor(ItemColor.Black))
+                {
+                    Attacker = _board[p1].Piece;
                     return true;
                 }
             }
@@ -86,9 +93,14 @@ namespace cachCore.utils
             {
                 Position p0 = _kingPosition.LeftDown;
                 Position p1 = _kingPosition.RightDown;
-                if (!p0.IsOutOfBounds() && _board[p0].IsOccupiedByPieceOfColor(ItemColor.White) ||
-                    !p1.IsOutOfBounds() && _board[p1].IsOccupiedByPieceOfColor(ItemColor.White))
+                if (!p0.IsOutOfBounds() && _board[p0].IsOccupiedByPieceOfColor(ItemColor.White))
                 {
+                    Attacker = _board[p0].Piece;
+                    return true;
+                }
+                else if (!p1.IsOutOfBounds() && _board[p1].IsOccupiedByPieceOfColor(ItemColor.White))
+                {
+                    Attacker = _board[p1].Piece;
                     return true;
                 }
             }
@@ -124,6 +136,7 @@ namespace cachCore.utils
                         Piece p = _board[pos].Piece;
                         if (p.PieceType == pieceType)
                         {
+                            Attacker = p;
                             return true;
                         }
                     }

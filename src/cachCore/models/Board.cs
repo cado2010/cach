@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using cachCore.enums;
 using cachCore.exceptions;
 using cachCore.utils;
+using System.Linq;
 
 namespace cachCore.models
 {
@@ -29,6 +30,12 @@ namespace cachCore.models
         [JsonIgnore]
         private Dictionary<ItemColor, Dictionary<PieceType, IList<Piece>>> _pieceMap;
 
+        /// <summary>
+        /// Material taken so far
+        /// </summary>
+        [JsonProperty]
+        private readonly Dictionary<ItemColor, IList<Piece>> _killedMaterial;
+
         [JsonProperty]
         private int _previousHistoryLevel;
 
@@ -36,6 +43,10 @@ namespace cachCore.models
         {
             _board = new BoardSquare[8, 8]; // [row, col]
             _boardHistory = new BoardHistory();
+
+            _killedMaterial = new Dictionary<ItemColor, IList<Piece>>();
+            _killedMaterial[ItemColor.Black] = new List<Piece>();
+            _killedMaterial[ItemColor.White] = new List<Piece>();
 
             // create Piece Map
             _pieceMap = new Dictionary<ItemColor, Dictionary<PieceType, IList<Piece>>>()
@@ -102,6 +113,21 @@ namespace cachCore.models
         }
 
         /// <summary>
+        /// Returns a new IList of all currently active pieces of the given color
+        /// </summary>
+        /// <param name="pieceColor"></param>
+        /// <returns></returns>
+        public IList<Piece> GetAllActivePieces(ItemColor pieceColor)
+        {
+            List<Piece> activePieces = new List<Piece>();
+
+            Dictionary<PieceType, IList<Piece>> activeMap = _pieceMap[pieceColor];
+            activePieces.AddRange(activeMap.SelectMany(kv => kv.Value));
+
+            return activePieces;
+        }
+
+        /// <summary>
         /// Saves current board into given file path in JSON format
         /// </summary>
         /// <param name="path"></param>
@@ -109,8 +135,10 @@ namespace cachCore.models
         {
             try
             {
-                string conv = JsonConvert.SerializeObject(this);
-                File.WriteAllText(path, conv);
+                var jsonString = JsonConvert.SerializeObject(this,
+                    new JsonSerializerSettings
+                    { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented });
+                File.WriteAllText(path, jsonString);
             }
             catch (Exception)
             {
@@ -119,13 +147,28 @@ namespace cachCore.models
         }
 
         /// <summary>
-        /// TODO
+        /// Reads board from a given file path
         /// </summary>
         /// <param name="path"></param>
-        /// <returns></returns>
         public static Board ReadFromFile(string path)
         {
-            throw new NotImplementedException();
+            try
+            {
+                string jsonString = File.ReadAllText(path);
+                var b = JsonConvert.DeserializeObject<Board>(jsonString,
+                    new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto });
+
+                // repopulate active pieces
+                b.RebuildPieceMap();
+
+                return b;
+            }
+            catch(Exception)
+            {
+                // TODO: log exception
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -213,6 +256,53 @@ namespace cachCore.models
             _pieceMap[pieceColor][pieceType] = pieces;
         }
 
+        /// <summary>
+        /// Rebuilds active piece map from current board (used when deserializing from JSON)
+        /// </summary>
+        private void RebuildPieceMap()
+        {
+            _pieceMap = new Dictionary<ItemColor, Dictionary<PieceType, IList<Piece>>>()
+            {
+                {
+                    ItemColor.Black,
+                    new Dictionary<PieceType, IList<Piece>>()
+                    {
+                        {  PieceType.King,  new List<Piece>() },
+                        {  PieceType.Queen,  new List<Piece>() },
+                        {  PieceType.Rook,  new List<Piece>() },
+                        {  PieceType.Bishop,  new List<Piece>() },
+                        {  PieceType.Knight,  new List<Piece>() },
+                        {  PieceType.Pawn,  new List<Piece>() },
+                    }
+                },
+                {
+                    ItemColor.White,
+                    new Dictionary<PieceType, IList<Piece>>()
+                    {
+                        {  PieceType.King,  new List<Piece>() },
+                        {  PieceType.Queen,  new List<Piece>() },
+                        {  PieceType.Rook,  new List<Piece>() },
+                        {  PieceType.Bishop,  new List<Piece>() },
+                        {  PieceType.Knight,  new List<Piece>() },
+                        {  PieceType.Pawn,  new List<Piece>() },
+                    }
+                }
+            };
+
+            for (int row = 0; row < 8; row++)
+            {
+                for (int col = 0; col < 8; col++)
+                {
+                    BoardSquare square = this[row, col];
+                    Piece piece = square.Piece;
+                    if (piece != null)
+                    {
+                        _pieceMap[piece.PieceColor][piece.PieceType].Add(piece);
+                    }
+                }
+            }
+        }
+
         private void MoveBegin(Piece piece, Position target)
         {
             BoardSquare square = this[target];
@@ -235,7 +325,7 @@ namespace cachCore.models
                 // record enemy alive status
                 _boardHistory.PushAliveStatus(previousPiece);
 
-                previousPiece.Kill();
+                Kill(previousPiece);
             }
 
             // remove piece from previous square
@@ -246,6 +336,18 @@ namespace cachCore.models
 
             // set piece in current square
             square.SetPiece(piece);
+        }
+
+        private void Kill(Piece piece)
+        {
+            piece.Kill();
+
+            // remove from active piece map
+            IList<Piece> activePieces = GetPieces(piece.PieceColor, piece.PieceType);
+            activePieces.Remove(piece);
+
+            // move into gobbled material
+            _killedMaterial[piece.PieceColor].Add(piece);
         }
 
         // TODO:
@@ -270,7 +372,7 @@ namespace cachCore.models
         /// </summary>
         /// <param name="piece"></param>
         /// <returns></returns>
-        private Movement GetMovement(Piece piece)
+        public Movement GetMovement(Piece piece)
         {
             Movement m = piece.GetMovement();
 
