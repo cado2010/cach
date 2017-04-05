@@ -62,6 +62,7 @@
     <Compile Include="rules\CastleAttemptValidationHelper.cs" />
     <Compile Include="rules\InMateHelper.cs" />
     <Compile Include="rules\InCheckHelper.cs" />
+    <Compile Include="utils\FENSerializer.cs" />
     <Compile Include="utils\MoveInputParser.cs" />
     <Compile Include="models\Movement.cs" />
     <Compile Include="models\Pawn.cs" />

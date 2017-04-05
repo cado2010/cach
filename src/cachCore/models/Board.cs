@@ -40,7 +40,7 @@ namespace cachCore.models
         [JsonProperty]
         private int _previousHistoryLevel;
 
-        public Board()
+        public Board(bool initStartingPosition = true)
         {
             _board = new BoardSquare[8, 8]; // [row, col]
             _boardHistory = new BoardHistory();
@@ -49,14 +49,7 @@ namespace cachCore.models
             _killedMaterial[ItemColor.Black] = new List<Piece>();
             _killedMaterial[ItemColor.White] = new List<Piece>();
 
-            // create Piece Map
-            _pieceMap = new Dictionary<ItemColor, Dictionary<PieceType, IList<Piece>>>()
-            {
-                { ItemColor.Black, new Dictionary<PieceType, IList<Piece>>() },
-                { ItemColor.White, new Dictionary<PieceType, IList<Piece>>() }
-            };
-
-            Init();
+            Init(initStartingPosition);
         }
 
         /// <summary>
@@ -175,7 +168,7 @@ namespace cachCore.models
         /// <summary>
         /// Initializes game board with pieces and positions
         /// </summary>
-        private void Init()
+        private void Init(bool initStartingPosition)
         {
             // create BoardSquares
             for (int row = 0; row < 8; row++)
@@ -189,9 +182,18 @@ namespace cachCore.models
                 }
             }
 
-            // create pieces and place in Board
-            InitAndPlacePieces(ItemColor.Black);
-            InitAndPlacePieces(ItemColor.White);
+            if (initStartingPosition)
+            {
+                CreatePieceMap(false);
+
+                // create pieces and place in Board
+                InitAndPlacePieces(ItemColor.Black);
+                InitAndPlacePieces(ItemColor.White);
+            }
+            else
+            {
+                CreatePieceMap(true);
+            }
         }
 
         private void InitAndPlacePieces(ItemColor pieceColor)
@@ -257,38 +259,55 @@ namespace cachCore.models
             _pieceMap[pieceColor][pieceType] = pieces;
         }
 
+        private void CreatePieceMap(bool initLists)
+        {
+            // create Piece Map and optionally initialize the lists too
+            if (initLists)
+            {
+                _pieceMap = new Dictionary<ItemColor, Dictionary<PieceType, IList<Piece>>>()
+                {
+                    {
+                        ItemColor.Black,
+                        new Dictionary<PieceType, IList<Piece>>()
+                        {
+                            {  PieceType.King,  new List<Piece>() },
+                            {  PieceType.Queen,  new List<Piece>() },
+                            {  PieceType.Rook,  new List<Piece>() },
+                            {  PieceType.Bishop,  new List<Piece>() },
+                            {  PieceType.Knight,  new List<Piece>() },
+                            {  PieceType.Pawn,  new List<Piece>() },
+                        }
+                    },
+                    {
+                        ItemColor.White,
+                        new Dictionary<PieceType, IList<Piece>>()
+                        {
+                            {  PieceType.King,  new List<Piece>() },
+                            {  PieceType.Queen,  new List<Piece>() },
+                            {  PieceType.Rook,  new List<Piece>() },
+                            {  PieceType.Bishop,  new List<Piece>() },
+                            {  PieceType.Knight,  new List<Piece>() },
+                            {  PieceType.Pawn,  new List<Piece>() },
+                        }
+                    }
+                };
+            }
+            else
+            {
+                _pieceMap = new Dictionary<ItemColor, Dictionary<PieceType, IList<Piece>>>()
+                {
+                    { ItemColor.Black, new Dictionary<PieceType, IList<Piece>>() },
+                    { ItemColor.White, new Dictionary<PieceType, IList<Piece>>() }
+                };
+            }
+        }
+
         /// <summary>
         /// Rebuilds active piece map from current board (used when deserializing from JSON)
         /// </summary>
-        private void RebuildPieceMap()
+        public void RebuildPieceMap()
         {
-            _pieceMap = new Dictionary<ItemColor, Dictionary<PieceType, IList<Piece>>>()
-            {
-                {
-                    ItemColor.Black,
-                    new Dictionary<PieceType, IList<Piece>>()
-                    {
-                        {  PieceType.King,  new List<Piece>() },
-                        {  PieceType.Queen,  new List<Piece>() },
-                        {  PieceType.Rook,  new List<Piece>() },
-                        {  PieceType.Bishop,  new List<Piece>() },
-                        {  PieceType.Knight,  new List<Piece>() },
-                        {  PieceType.Pawn,  new List<Piece>() },
-                    }
-                },
-                {
-                    ItemColor.White,
-                    new Dictionary<PieceType, IList<Piece>>()
-                    {
-                        {  PieceType.King,  new List<Piece>() },
-                        {  PieceType.Queen,  new List<Piece>() },
-                        {  PieceType.Rook,  new List<Piece>() },
-                        {  PieceType.Bishop,  new List<Piece>() },
-                        {  PieceType.Knight,  new List<Piece>() },
-                        {  PieceType.Pawn,  new List<Piece>() },
-                    }
-                }
-            };
+            CreatePieceMap(true);
 
             for (int row = 0; row < 8; row++)
             {

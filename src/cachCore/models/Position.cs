@@ -67,7 +67,7 @@ namespace cachCore.models
             {
                 throw new CachException("Invalid algebraic notation: " + algPos);
             }
-            int col = ((int) algPos[0]) - 97;
+            int col = ((int) algPos[0]) - (char.IsLower(algPos[0]) ? 97 : 65);
             if (col < 0 || col > 7)
             {
                 throw new CachException("Invalid File in algebraic notation: " + algPos);
