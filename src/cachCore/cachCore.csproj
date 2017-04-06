@@ -50,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="enums\BoardHistoryType.cs" />
+    <Compile Include="enums\MoveErrorType.cs" />
     <Compile Include="enums\PieceType.cs" />
     <Compile Include="enums\ItemColor.cs" />
     <Compile Include="exceptions\CachException.cs" />

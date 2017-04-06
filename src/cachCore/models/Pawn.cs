@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using cachCore.enums;
+using cachCore.utils;
 
 namespace cachCore.models
 {
@@ -19,7 +20,7 @@ namespace cachCore.models
                 paths.Add(new List<Position> { Position.Up });
                 paths.Add(new List<Position> { Position.LeftUp });
                 paths.Add(new List<Position> { Position.RightUp });
-                if (Position.Row == 2)
+                if (Position.Row == BoardUtils.GetPawnStartRow(PieceColor))
                 {
                     paths.Add(new List<Position> { Position.Up.Up });
                 }
@@ -29,7 +30,7 @@ namespace cachCore.models
                 paths.Add(new List<Position> { Position.Down });
                 paths.Add(new List<Position> { Position.LeftDown });
                 paths.Add(new List<Position> { Position.RightDown });
-                if (Position.Row == 7)
+                if (Position.Row == BoardUtils.GetPawnStartRow(PieceColor))
                 {
                     paths.Add(new List<Position> { Position.Down.Down });
                 }

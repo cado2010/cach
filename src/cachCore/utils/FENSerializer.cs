@@ -57,7 +57,24 @@ namespace cachCore.utils
                 parseIndex++;
             }
 
+            // recreate active piece map from current Board
+            board.RebuildPieceMap();
+
             return board;
+        }
+
+        public string BoardToFEN(Board board)
+        {
+            string fen = "";
+
+            for (int row = 7; row >= 0; row--)
+            {
+                for (int col = 0; col < 8; col++)
+                {
+                }
+            }
+
+            return fen;
         }
 
         private static Piece CreatePiece(char pc, Position pos)

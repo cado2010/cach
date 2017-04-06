@@ -10,14 +10,12 @@ namespace cachCore.utils
     /// </summary>
     public class MoveInputParser
     {
-        private readonly ItemColor _pieceColor;
         private string _input;
         private string _lowerInput;
         private readonly Dictionary<char, PieceType> _charToPieceTypeMap;
 
-        public MoveInputParser(ItemColor pieceColor, string input)
+        public MoveInputParser(string input)
         {
-            _pieceColor = pieceColor;
             _input = input.Trim();
             _lowerInput = _input.ToLower();
 
@@ -41,34 +39,53 @@ namespace cachCore.utils
             Parse();
         }
 
-        public ItemColor PieceColor
-        {
-            get { return _pieceColor; }
-        }
-
+        /// <summary>
+        /// Piece Type specified by this move, must be available
+        /// </summary>
         public PieceType PieceType { get; private set; }
 
         /// <summary>
-        /// Where input specifies piece to move to
+        /// Where input specifies piece to move to, must be specified or Castle
         /// </summary>
         public Position TargetPosition { get; private set; }
 
         /// <summary>
-        /// Where input specifies piece is moving from (this may be partial)
+        /// Where input specifies piece is moving from (this may be partial or unavailable)
         /// </summary>
         public Position StartPosition { get; private set; }
+
+        /// <summary>
+        /// True if some component of StartPosition is available
+        /// </summary>
+        public bool IsStartPositionInfoAvailable
+        {
+            get
+            {
+                return StartPosition.Row != Position.InvalidCoordinate ||
+                    StartPosition.Column != Position.InvalidCoordinate;
+            }
+        }
 
         public bool IsKingSideCastle { get; private set; }
 
         public bool IsQueenSideCastle { get; private set; }
 
+        public bool IsCastle {  get { return IsKingSideCastle || IsQueenSideCastle; } }
+
         public bool IsKill { get; private set; }
+
+        public bool IsValid
+        {
+            get { return PieceType != PieceType.Unknown && (TargetPosition.IsValid || IsCastle); }
+        }
 
         private int _startRow;
         private int _startColumn;
 
         private void Parse()
         {
+            PieceType = PieceType.Unknown;
+
             _startRow = Position.InvalidCoordinate;
             _startColumn = Position.InvalidCoordinate;
 

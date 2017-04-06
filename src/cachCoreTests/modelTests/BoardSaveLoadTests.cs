@@ -6,7 +6,7 @@ using cachCore.models;
 namespace cachCoreTests
 {
     [TestFixture]
-    public class BoardTests
+    public class BoardSaveLoadTests
     {
         [Test]
         public void test_board_save()

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
+using log4net;
 using cachCore.enums;
 using cachCore.exceptions;
 using cachCore.utils;
@@ -40,8 +41,21 @@ namespace cachCore.models
         [JsonProperty]
         private int _previousHistoryLevel;
 
+        [JsonIgnore]
+        private ILog _logger;
+
+        [JsonIgnore]
+        private static ILog _staticLogger;
+
+        static Board()
+        {
+            _staticLogger = LogManager.GetLogger(typeof(Board).Name);
+        }
+
         public Board(bool initStartingPosition = true)
         {
+            _logger = LogManager.GetLogger(GetType().Name);
+
             _board = new BoardSquare[8, 8]; // [row, col]
             _boardHistory = new BoardHistory();
 
@@ -50,6 +64,8 @@ namespace cachCore.models
             _killedMaterial[ItemColor.White] = new List<Piece>();
 
             Init(initStartingPosition);
+
+            _logger.Debug($"Board: created");
         }
 
         /// <summary>
@@ -134,9 +150,9 @@ namespace cachCore.models
                     { TypeNameHandling = TypeNameHandling.Auto, Formatting = Formatting.Indented });
                 File.WriteAllText(path, jsonString);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // TODO: log exception
+                _logger.Error("WriteToFile: exception: " + ex.Message, ex);
             }
         }
 
@@ -157,13 +173,197 @@ namespace cachCore.models
 
                 return b;
             }
-            catch(Exception)
+            catch(Exception ex)
             {
-                // TODO: log exception
+                _staticLogger.Error("ReadFromFile: exception: " + ex.Message, ex);
             }
 
             return null;
         }
+
+        /// <summary>
+        /// Rebuilds active piece map from current board (used when deserializing from JSON)
+        /// </summary>
+        public void RebuildPieceMap()
+        {
+            CreatePieceMap(true);
+
+            for (int row = 0; row < 8; row++)
+            {
+                for (int col = 0; col < 8; col++)
+                {
+                    BoardSquare square = this[row, col];
+                    Piece piece = square.Piece;
+                    if (piece != null)
+                    {
+                        _pieceMap[piece.PieceColor][piece.PieceType].Add(piece);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns the possible movement paths for the give piece with constraints
+        /// </summary>
+        /// <param name="piece"></param>
+        /// <returns></returns>
+        public Movement GetMovement(Piece piece)
+        {
+            Movement m = piece.GetMovement();
+
+            // prune paths that are blocked due to board population
+            IList<IList<Position>> constrainedPaths = new List<IList<Position>>();
+
+            foreach (var path in m.Paths)
+            {
+                List<Position> constrainedPath = new List<Position>();
+
+                // prune path if blocked by own color (exclude)
+                // prune path if blocked by opponent color (include)
+                foreach (var pos in path)
+                {
+                    BoardSquare square = this[pos];
+
+                    // special processing for Pawns required when attempting to move out of File
+                    if (piece.PieceType == PieceType.Pawn && !pos.IsSameFile(piece.Position))
+                    {
+                        // out of file movement allowed for Pawn only if there is an opponent there
+                        if (square.IsOccupied() && !square.IsOccupiedByPieceOfColor(piece.PieceColor))
+                        {
+                            constrainedPath.Add(pos);
+                        }
+
+                        // TODO: implement en passant rule checks here
+                    }
+                    else
+                    {
+                        if (square.IsOccupiedByPieceOfColor(piece.PieceColor))
+                        {
+                            break;
+                        }
+
+                        constrainedPath.Add(pos);
+
+                        if (square.IsOccupied())
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                if (constrainedPath.Count > 0)
+                {
+                    constrainedPaths.Add(constrainedPath);
+                }
+            }
+
+            return new Movement(m.Start, constrainedPaths, true);
+        }
+
+        /// <summary>
+        // Moves or returns invalid move
+        /// </summary>
+        /// <param name="pieceColor"></param>
+        /// <param name="move"></param>
+        /// <returns></returns>
+        public MoveErrorType Move(ItemColor pieceColor, string move)
+        {
+            try
+            {
+                MoveInputParser mip = null;
+
+                try
+                {
+                    mip = new MoveInputParser(move);
+                }
+                catch(CachException ex)
+                {
+                    _logger.Error($"Move[{pieceColor}]: exception during parse: {ex.Message}, move: {move}", ex);
+                    return MoveErrorType.InvalidFormat;
+                }
+
+                if (!mip.IsValid)
+                {
+                    _logger.Info($"Move[{pieceColor}]: invalid format: {move}");
+                    return MoveErrorType.InvalidFormat;
+                }
+
+                IList<Piece> pieces = GetMoveInputPieces(pieceColor, mip);
+                if (pieces == null || pieces.Count == 0)
+                {
+                    // no such piece
+                    _logger.Info($"Move[{pieceColor}]: no applicable pieces: {move}");
+                    return MoveErrorType.NoSuchPiece;
+                }
+
+                // if more than one piece, then check for range of each and if the
+                // target is within range of more than one piece, then invalid move
+                Piece pieceToMove = null;
+                foreach (var piece in pieces)
+                {
+                    if (IsWithinPieceRange(piece, mip.TargetPosition))
+                    {
+                        if (pieceToMove != null)
+                        {
+                            // more than one piece can reach the target - invalid move
+                            _logger.Info($"Move[{pieceColor}]: more than one piece can reach this position: {move}");
+                            return MoveErrorType.MoreThanOnePieceInRange;
+                        }
+                        else
+                        {
+                            pieceToMove = piece;
+                        }
+                    }
+                }
+
+                if (pieceToMove == null)
+                {
+                    // no piece in range
+                    _logger.Info($"Move[{pieceColor}]: none of the pieces can reach this position: {move}");
+                    return MoveErrorType.NoPieceInRange;
+                }
+
+                // if we reach here, then there is a potential piece that can be moved
+                // so attempt the move and check for Check of this color, if in Check, then move is invalid
+                bool pieceKilled = MoveBegin(pieceToMove, mip.TargetPosition);
+
+                // piece must get killed for kill spec in move input - or else its an invalid move spec
+                if (mip.IsKill && !pieceKilled)
+                {
+                    // invalid kill
+                    _logger.Info($"Move[{pieceColor}]: nothing to kill: {move}");
+
+                    // revert the steps that MoveBegin() did
+                    MoveRevert();
+                    return MoveErrorType.InvalidKill;
+                }
+
+                var inCheckHelper = new InCheckHelper(this, pieceColor);
+                if (inCheckHelper.IsInCheck)
+                {
+                    // King cannot be in check after move
+                    _logger.Info($"Move[{pieceColor}]: King in check: {move}");
+
+                    // revert the steps that MoveBegin() did
+                    MoveRevert();
+                    return MoveErrorType.KingInCheck;
+                }
+
+                // if we reach here, then the move is valid
+                MoveCommit();
+
+                _logger.Debug($"Move[{pieceColor}]: valid move: {move}");
+                return MoveErrorType.Ok;
+            }
+            catch (CachException ex)
+            {
+                _logger.Error($"Move[{pieceColor}]: Cach exception: {ex.Message} during move: {move}");
+                return MoveErrorType.CachError;
+            }
+        }
+
+        //-------------------------------------------------------------------------------
+        // private impl
 
         /// <summary>
         /// Initializes game board with pieces and positions
@@ -302,29 +502,28 @@ namespace cachCore.models
             }
         }
 
-        /// <summary>
-        /// Rebuilds active piece map from current board (used when deserializing from JSON)
-        /// </summary>
-        public void RebuildPieceMap()
+        private IList<Piece> GetMoveInputPieces(ItemColor pieceColor, MoveInputParser mip)
         {
-            CreatePieceMap(true);
+            IList<Piece> mipPieces;
 
-            for (int row = 0; row < 8; row++)
+            IList<Piece> pieces = GetPieces(pieceColor, mip.PieceType);
+            if (mip.IsStartPositionInfoAvailable)
             {
-                for (int col = 0; col < 8; col++)
-                {
-                    BoardSquare square = this[row, col];
-                    Piece piece = square.Piece;
-                    if (piece != null)
-                    {
-                        _pieceMap[piece.PieceColor][piece.PieceType].Add(piece);
-                    }
-                }
+                mipPieces = pieces.Where(p =>
+                    p.Position.IsSameFile(mip.StartPosition) ||
+                    p.Position.IsSameRank(mip.StartPosition)).ToList();
             }
+            else
+            {
+                mipPieces = pieces;
+            }
+
+            return mipPieces;
         }
 
-        private void MoveBegin(Piece piece, Position target)
+        private bool MoveBegin(Piece piece, Position target)
         {
+            bool pieceKilled = false;
             BoardSquare square = this[target];
 
             // sanity check
@@ -335,19 +534,26 @@ namespace cachCore.models
 
             _previousHistoryLevel = _boardHistory.Level;
 
-            // record piece current pos
-            _boardHistory.PushPosition(piece);
-
             if (square.IsOccupied())
             {
                 Piece previousPiece = square.Piece;
 
                 // record enemy alive status
                 _boardHistory.PushAliveStatus(previousPiece);
+                mKill(previousPiece);
 
-                Kill(previousPiece);
+                pieceKilled = true;
             }
 
+            // record piece current pos
+            _boardHistory.PushPosition(piece);
+            mMove(piece, target);
+
+            return pieceKilled;
+        }
+
+        private void mMove(Piece piece, Position target)
+        {
             // remove piece from previous square
             this[piece.Position].RemovePiece();
 
@@ -355,10 +561,10 @@ namespace cachCore.models
             piece.MoveTo(target);
 
             // set piece in current square
-            square.SetPiece(piece);
+            this[target].SetPiece(piece);
         }
 
-        private void Kill(Piece piece)
+        private void mKill(Piece piece)
         {
             piece.Kill();
 
@@ -370,9 +576,24 @@ namespace cachCore.models
             _killedMaterial[piece.PieceColor].Add(piece);
         }
 
-        // TODO:
+        private void mUnkill(Piece piece)
+        {
+            piece.Unkill();
+
+            // remove from gobbled material
+            _killedMaterial[piece.PieceColor].Remove(piece);
+
+            // add to active piece map
+            IList<Piece> activePieces = GetPieces(piece.PieceColor, piece.PieceType);
+            activePieces.Add(piece);
+
+            // set unkilled piece back into BoardSquare
+            this[piece.Position].SetPiece(piece);
+        }
+
         private void MovePromoteBegin(Piece pieceOriginal, Piece piecePromoted, Position target)
         {
+            // TODO: implement MoveBegin with promotion support
         }
 
         private void MoveCommit(Piece piecePromoted = null)
@@ -384,65 +605,41 @@ namespace cachCore.models
 
         private void MoveRevert()
         {
-            // TODO: pop history until level reaches _previousHistoryLevel and undo each
+            // pop history until level reaches _previousHistoryLevel and undo each
+            while (_boardHistory.Level != _previousHistoryLevel)
+            {
+                mRevert();
+            }
         }
 
         /// <summary>
-        /// Returns the possible movement paths for the give piece with constraints
+        /// Pops top of BoardHistory stack and reverts that step
         /// </summary>
-        /// <param name="piece"></param>
-        /// <returns></returns>
-        public Movement GetMovement(Piece piece)
+        private void mRevert()
         {
-            Movement m = piece.GetMovement();
+            BoardHistoryItem hi = _boardHistory.Pop();
+            Piece piece = null;
 
-            // prune paths that are blocked due to board population
-            IList<IList<Position>> constrainedPaths = new List<IList<Position>>();
-
-            foreach (var path in m.Paths)
+            switch (hi.Type)
             {
-                List<Position> constrainedPath = new List<Position>();
+                case BoardHistoryType.PieceAliveStatus:
+                    // bring piece back alive
+                    PieceAliveStatusHistoryItem pahi = hi as PieceAliveStatusHistoryItem;
+                    piece = Piece.Get(pahi.PieceId);
+                    mUnkill(piece);
+                    break;
 
-                // prune path if blocked by own color (exclude)
-                // prune path if blocked by opponent color (include)
-                foreach (var pos in path)
-                {
-                    BoardSquare square = this[pos];
+                case BoardHistoryType.PiecePosition:
+                    // move piece back to original position
+                    PiecePositionHistoryItem pphi = hi as PiecePositionHistoryItem;
+                    piece = Piece.Get(pphi.PieceId);
+                    mMove(piece, pphi.Position);
+                    break;
 
-                    // special processing for Pawns required when attempting to move out of File
-                    if (piece.PieceType == PieceType.Pawn && !pos.IsSameFile(piece.Position))
-                    {
-                        // out of file movement allowed for Pawn only if there is an opponent there
-                        if (square.IsOccupied() && !square.IsOccupiedByPieceOfColor(piece.PieceColor))
-                        {
-                            constrainedPath.Add(pos);
-                        }
-
-                        // TODO: implement en passant rule checks here
-                    }
-                    else
-                    {
-                        if (square.IsOccupiedByPieceOfColor(piece.PieceColor))
-                        {
-                            break;
-                        }
-
-                        constrainedPath.Add(pos);
-
-                        if (square.IsOccupied())
-                        {
-                            break;
-                        }
-                    }
-                }
-
-                if (constrainedPath.Count > 0)
-                {
-                    constrainedPaths.Add(constrainedPath);
-                }
+                case BoardHistoryType.PiecePromotion:
+                    // TODO:
+                    break;
             }
-
-            return new Movement(m.Start, constrainedPaths, true);
         }
     }
 }

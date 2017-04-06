@@ -10,6 +10,7 @@ namespace cachCore.models
         protected BoardHistoryItem(BoardHistoryType type)
         {
             Id = System.Guid.NewGuid().ToString();
+            Type = type;
         }
     }
 

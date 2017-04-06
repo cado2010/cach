@@ -24,6 +24,16 @@ namespace cachCore.rules
             IsInCheck = ComputeInCheck();
         }
 
+        /// <summary>
+        /// Ctor that uses Board current King position implcitly
+        /// </summary>
+        /// <param name="board"></param>
+        /// <param name="pieceColor"></param>
+        public InCheckHelper(Board board, ItemColor pieceColor) :
+            this(board, pieceColor, (board.GetPieces(pieceColor, PieceType.King)[0] as King).Position)
+        {
+        }
+
         public bool IsInCheck { get; private set; }
 
         public Piece Attacker { get; private set; }

@@ -37,9 +37,14 @@ namespace cachCore.models
             get { return -1; }
         }
 
-        public bool IsInvalid()
+        public bool IsInvalid
         {
-            return Row == InvalidCoordinate || Column == InvalidCoordinate || IsOutOfBounds();
+            get { return Row == InvalidCoordinate || Column == InvalidCoordinate || IsOutOfBounds(); }
+        }
+
+        public bool IsValid
+        {
+            get { return !IsInvalid; }
         }
 
         public string ToAlgebraic()

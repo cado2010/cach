@@ -85,6 +85,16 @@ namespace cachCore.models
             IsAlive = false;
         }
 
+        public void Unkill()
+        {
+            if (IsAlive)
+            {
+                throw new CachException("Piece is alive");
+            }
+
+            IsAlive = true;
+        }
+
         /// <summary>
         /// Implemented per derived piece
         /// </summary>
@@ -97,7 +107,7 @@ namespace cachCore.models
             {
                 throw new CachException("Piece is dead");
             }
-            if (Position.IsInvalid())
+            if (Position.IsInvalid)
             {
                 throw new CachException("Piece position is invalid: " + Position);
             }
