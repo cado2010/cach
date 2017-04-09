@@ -65,9 +65,9 @@ namespace cachCore.rules
 
             // check diagonal paths for Queen or Bishop
             paths.Add(_kingPosition.GetLeftUpPath());
-            paths.Add(_kingPosition.GetRightPath());
-            paths.Add(_kingPosition.GetUpPath());
-            paths.Add(_kingPosition.GetDownPath());
+            paths.Add(_kingPosition.GetRightUpPath());
+            paths.Add(_kingPosition.GetLeftDownPath());
+            paths.Add(_kingPosition.GetRightDownPath());
             if (CheckPathForEnemyPieceType(PieceType.Queen, paths) ||
                 CheckPathForEnemyPieceType(PieceType.Bishop, paths))
             {
@@ -148,6 +148,12 @@ namespace cachCore.rules
                         {
                             Attacker = p;
                             return true;
+                        }
+                        else
+                        {
+                            // some enemy piece not match piece of search type
+                            // so abandon this path for further tests
+                            break;
                         }
                     }
                 }

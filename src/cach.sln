@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cachCore", "cachCore\cachCo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cachCoreTests", "cachCoreTests\cachCoreTests.csproj", "{8EDF4429-251A-416D-BB68-93F227191BCF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cachRendering", "cachRendering\cachRendering.csproj", "{562124BF-20A0-4BE0-8C67-5E173E86BF03}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -69,6 +71,22 @@ Global
 		{8EDF4429-251A-416D-BB68-93F227191BCF}.Release|x64.Build.0 = Release|Any CPU
 		{8EDF4429-251A-416D-BB68-93F227191BCF}.Release|x86.ActiveCfg = Release|Any CPU
 		{8EDF4429-251A-416D-BB68-93F227191BCF}.Release|x86.Build.0 = Release|Any CPU
+		{562124BF-20A0-4BE0-8C67-5E173E86BF03}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{562124BF-20A0-4BE0-8C67-5E173E86BF03}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{562124BF-20A0-4BE0-8C67-5E173E86BF03}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{562124BF-20A0-4BE0-8C67-5E173E86BF03}.Debug|ARM.Build.0 = Debug|Any CPU
+		{562124BF-20A0-4BE0-8C67-5E173E86BF03}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{562124BF-20A0-4BE0-8C67-5E173E86BF03}.Debug|x64.Build.0 = Debug|Any CPU
+		{562124BF-20A0-4BE0-8C67-5E173E86BF03}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{562124BF-20A0-4BE0-8C67-5E173E86BF03}.Debug|x86.Build.0 = Debug|Any CPU
+		{562124BF-20A0-4BE0-8C67-5E173E86BF03}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{562124BF-20A0-4BE0-8C67-5E173E86BF03}.Release|Any CPU.Build.0 = Release|Any CPU
+		{562124BF-20A0-4BE0-8C67-5E173E86BF03}.Release|ARM.ActiveCfg = Release|Any CPU
+		{562124BF-20A0-4BE0-8C67-5E173E86BF03}.Release|ARM.Build.0 = Release|Any CPU
+		{562124BF-20A0-4BE0-8C67-5E173E86BF03}.Release|x64.ActiveCfg = Release|Any CPU
+		{562124BF-20A0-4BE0-8C67-5E173E86BF03}.Release|x64.Build.0 = Release|Any CPU
+		{562124BF-20A0-4BE0-8C67-5E173E86BF03}.Release|x86.ActiveCfg = Release|Any CPU
+		{562124BF-20A0-4BE0-8C67-5E173E86BF03}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

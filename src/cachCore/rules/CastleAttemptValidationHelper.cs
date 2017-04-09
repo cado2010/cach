@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using cachCore.enums;
-using cachCore.exceptions;
 using cachCore.models;
 using cachCore.utils;
 
@@ -14,24 +13,29 @@ namespace cachCore.rules
         private Board _board;
         private ItemColor _pieceColor;
         private ItemColor _enemyColor;
-        private MoveInputParser _moveInput;
+        private bool _isKingSideCastle;
+        private Position _kingPositionAfterCastle;
+        private Position _rookPositionAfterCastle;
 
-        public CastleAttemptValidationHelper(Board board, ItemColor pieceColor, MoveInputParser moveInput)
+        public CastleAttemptValidationHelper(Board board, ItemColor pieceColor, bool isKingSideCastle)
         {
-            if (!_moveInput.IsKingSideCastle && !_moveInput.IsQueenSideCastle)
-            {
-                throw new CachException("Move input does not specify a Castle attempt");
-            }
-
             _board = board;
             _pieceColor = pieceColor;
-            _moveInput = moveInput;
             _enemyColor = pieceColor == ItemColor.Black ? ItemColor.White : ItemColor.Black;
+            _isKingSideCastle = isKingSideCastle;
 
             CanCastle = ComputeCanCastle();
         }
 
         public bool CanCastle { get; private set; }
+
+        public King King { get; private set; }
+
+        public Rook Rook { get; private set; }
+
+        public Position KingPositionAfterCastle { get; private set; }
+
+        public Position RookPositionAfterCastle { get; private set; }
 
         /// <summary>
         /// rules:
@@ -45,6 +49,9 @@ namespace cachCore.rules
         /// <returns></returns>
         private bool ComputeCanCastle()
         {
+            KingPositionAfterCastle = Position.Invalid;
+            RookPositionAfterCastle = Position.Invalid;
+
             King king = _board.GetPieces(_pieceColor, PieceType.King)[0] as King;
 
             // 1.
@@ -57,36 +64,47 @@ namespace cachCore.rules
             int rookCol;
             List<Position> checkPositions;
             List<Position> mustBeEmptyPositions;
-            if (_moveInput.IsKingSideCastle)
+            if (_isKingSideCastle)
             {
                 rookCol = 7;
+                Position kpr = king.Position.Right;
+                Position kprr = kpr.Right;
                 checkPositions = new List<Position>()
                 {
                     king.Position,
-                    king.Position.Right,
-                    king.Position.Right.Right,
+                    kpr,
+                    kprr
                 };
                 mustBeEmptyPositions = new List<Position>()
                 {
-                    king.Position.Right,
-                    king.Position.Right.Right,
+                    kpr,
+                    kprr
                 };
+
+                _kingPositionAfterCastle = kprr;
+                _rookPositionAfterCastle = kpr;
             }
             else
             {
+                // Queen side castle
                 rookCol = 0;
+                Position kpl = king.Position.Left;
+                Position kpll = kpl.Left;
                 checkPositions = new List<Position>()
                 {
                     king.Position,
-                    king.Position.Left,
-                    king.Position.Left.Left,
+                    kpl,
+                    kpll,
                 };
                 mustBeEmptyPositions = new List<Position>()
                 {
-                    king.Position.Left,
-                    king.Position.Left.Left,
+                    kpl,
+                    kpll,
                     king.Position.Left.Left.Left,
                 };
+
+                _kingPositionAfterCastle = kpll;
+                _rookPositionAfterCastle = kpl;
             }
             Position rookPos = new Position(row, rookCol);
 
@@ -120,7 +138,11 @@ namespace cachCore.rules
                 }
             }
 
-            // the King can Castle
+            // the King can Castle - setup various helper members and return true
+            King = king;
+            Rook = rookSquare.Piece as Rook;
+            KingPositionAfterCastle = _kingPositionAfterCastle;
+            RookPositionAfterCastle = _rookPositionAfterCastle;
             return true;
         }
     }

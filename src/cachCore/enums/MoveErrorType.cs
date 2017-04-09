@@ -10,6 +10,7 @@
         MoreThanOnePieceInRange,
         NoPieceInRange,
         KingInCheck,
-        InvalidKill
+        InvalidKill,
+        InvalidCastle
     }
 }

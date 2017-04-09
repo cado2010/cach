@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{F0D17A4C-C611-49E3-A6E5-6663455BB239}</ProjectGuid>
+    <ProjectGuid>{562124BF-20A0-4BE0-8C67-5E173E86BF03}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>cachCore</RootNamespace>
-    <AssemblyName>cachCore</AssemblyName>
+    <RootNamespace>cachRendering</RootNamespace>
+    <AssemblyName>cachRendering</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -29,18 +29,10 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  <PropertyGroup />
   <ItemGroup>
-    <Reference Include="log4net, Version=2.0.8.0, Culture=neutral, PublicKeyToken=669e0ddf0bb1aa2a, processorArchitecture=MSIL">
-      <HintPath>..\packages\log4net.2.0.8\lib\net45-full\log4net.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.10.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -49,37 +41,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="controllers\GameController.cs" />
-    <Compile Include="enums\BoardHistoryType.cs" />
-    <Compile Include="enums\MoveErrorType.cs" />
-    <Compile Include="enums\PieceType.cs" />
-    <Compile Include="enums\ItemColor.cs" />
-    <Compile Include="exceptions\CachException.cs" />
-    <Compile Include="models\Board.cs" />
-    <Compile Include="models\Bishop.cs" />
-    <Compile Include="models\BoardHistoryItem.cs" />
-    <Compile Include="models\BoardHistory.cs" />
-    <Compile Include="models\BoardSquare.cs" />
-    <Compile Include="models\Game.cs" />
-    <Compile Include="models\MoveDescriptor.cs" />
-    <Compile Include="utils\BoardUtils.cs" />
-    <Compile Include="rules\CastleAttemptValidationHelper.cs" />
-    <Compile Include="rules\InMateHelper.cs" />
-    <Compile Include="rules\InCheckHelper.cs" />
-    <Compile Include="utils\FENSerializer.cs" />
-    <Compile Include="utils\MoveInputParser.cs" />
-    <Compile Include="models\Movement.cs" />
-    <Compile Include="models\Pawn.cs" />
-    <Compile Include="models\Knight.cs" />
-    <Compile Include="models\Rook.cs" />
-    <Compile Include="models\Queen.cs" />
-    <Compile Include="models\King.cs" />
-    <Compile Include="models\Piece.cs" />
-    <Compile Include="models\Position.cs" />
+    <Compile Include="BoardRenderer.cs" />
+    <Compile Include="IBoardRenderer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

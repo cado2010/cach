@@ -3,10 +3,12 @@
 ################################################################################
 
 /src/.vs/cach/v14
-/src/cach/obj/Debug
-/src/cach/bin/Debug
-/src/cachCore/bin/Debug
-/src/cachCore/obj/Debug
-/src/cachCoreTests/bin/Debug
-/src/cachCoreTests/obj/Debug
+/src/cach/obj
+/src/cach/bin
+/src/cachCore/bin
+/src/cachCore/obj
+/src/cachCoreTests/bin
+/src/cachCoreTests/obj
 /src/packages
+/src/cachRendering/bin
+/src/cachRendering/obj

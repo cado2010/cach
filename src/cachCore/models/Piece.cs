@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Collections.Concurrent;
 using Newtonsoft.Json;
 using cachCore.enums;
 using cachCore.exceptions;
@@ -26,11 +27,11 @@ namespace cachCore.models
         /// Instance tracking map: <id> -> Piece
         /// </summary>
         [JsonIgnore]
-        private static Dictionary<string, Piece> _pieceMap;
+        private static ConcurrentDictionary<string, Piece> _pieceMap;
 
         static Piece()
         {
-            _pieceMap = new Dictionary<string, Piece>();
+            _pieceMap = new ConcurrentDictionary<string, Piece>();
         }
 
         public static Piece Get(string id)
@@ -41,6 +42,21 @@ namespace cachCore.models
         public static void Put(Piece piece)
         {
             _pieceMap[piece.Id] = piece;
+        }
+
+        public static void Remove(string id)
+        {
+            Piece p;
+            _pieceMap.TryRemove(id, out p);
+        }
+
+        public static void Remove(IList<Piece> pieces)
+        {
+            foreach (var piece in pieces)
+            {
+                Piece p;
+                _pieceMap.TryRemove(piece.Id, out p);
+            }
         }
 
         protected Piece(PieceType pieceType, ItemColor pieceColor, Position position, bool isTemp = false)

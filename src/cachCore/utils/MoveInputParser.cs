@@ -12,13 +12,20 @@ namespace cachCore.utils
     {
         private string _input;
         private string _lowerInput;
-        private readonly Dictionary<char, PieceType> _charToPieceTypeMap;
+        private readonly static Dictionary<char, PieceType> _charToPieceTypeMap;
 
         public MoveInputParser(string input)
         {
             _input = input.Trim();
             _lowerInput = _input.ToLower();
 
+            Parse();
+        }
+
+        public MoveDescriptor MoveDescriptor { get; private set; }
+
+        static MoveInputParser()
+        {
             _charToPieceTypeMap = new Dictionary<char, PieceType>()
             {
                 { 'k', PieceType.King },
@@ -35,78 +42,69 @@ namespace cachCore.utils
                 { 'g', PieceType.Pawn },
                 { 'h', PieceType.Pawn },
             };
-
-            Parse();
         }
+
+        //-------------------------------------------------------------------------------
 
         /// <summary>
         /// Piece Type specified by this move, must be available
         /// </summary>
-        public PieceType PieceType { get; private set; }
+        private PieceType _pieceType;
 
         /// <summary>
         /// Where input specifies piece to move to, must be specified or Castle
         /// </summary>
-        public Position TargetPosition { get; private set; }
+        private Position _targetPosition;
 
         /// <summary>
         /// Where input specifies piece is moving from (this may be partial or unavailable)
         /// </summary>
-        public Position StartPosition { get; private set; }
+        private Position _startPosition;
 
-        /// <summary>
-        /// True if some component of StartPosition is available
-        /// </summary>
-        public bool IsStartPositionInfoAvailable
-        {
-            get
-            {
-                return StartPosition.Row != Position.InvalidCoordinate ||
-                    StartPosition.Column != Position.InvalidCoordinate;
-            }
-        }
+        private bool _isKingSideCastle;
 
-        public bool IsKingSideCastle { get; private set; }
+        private bool _isQueenSideCastle;
 
-        public bool IsQueenSideCastle { get; private set; }
-
-        public bool IsCastle {  get { return IsKingSideCastle || IsQueenSideCastle; } }
-
-        public bool IsKill { get; private set; }
-
-        public bool IsValid
-        {
-            get { return PieceType != PieceType.Unknown && (TargetPosition.IsValid || IsCastle); }
-        }
+        private bool _isKill;
 
         private int _startRow;
         private int _startColumn;
 
+        private bool _isDrawOffer;
+
         private void Parse()
         {
-            PieceType = PieceType.Unknown;
+            _pieceType = PieceType.Unknown;
 
             _startRow = Position.InvalidCoordinate;
             _startColumn = Position.InvalidCoordinate;
 
-            StartPosition = Position.Invalid;
-            TargetPosition = Position.Invalid;
+            _startPosition = Position.Invalid;
+            _targetPosition = Position.Invalid;
 
             if (_input.Length < 2)
             {
                 throw new CachException("Movement input string has to be >= 2 chars");
             }
 
+            if (_lowerInput == "(=)")
+            {
+                _isDrawOffer = true;
+                CreateMoveDescriptor();
+                return;
+            }
             if (_lowerInput == "o-o")
             {
-                PieceType = PieceType.King;
-                IsKingSideCastle = true;
+                _pieceType = PieceType.King;
+                _isKingSideCastle = true;
+                CreateMoveDescriptor();
                 return;
             }
             if (_lowerInput == "o-o-o")
             {
-                PieceType = PieceType.King;
-                IsQueenSideCastle = true;
+                _pieceType = PieceType.King;
+                _isQueenSideCastle = true;
+                CreateMoveDescriptor();
                 return;
             }
 
@@ -120,38 +118,38 @@ namespace cachCore.utils
             switch (_input.Length)
             {
                 case 2:
-                    PieceType = PieceType.Pawn;
-                    TargetPosition = Position.FromAlgebraic(_lowerInput);
+                    _pieceType = PieceType.Pawn;
+                    _targetPosition = Position.FromAlgebraic(_lowerInput);
                     break;
 
                 case 3:
                     CheckSetPieceType();
-                    if (PieceType == PieceType.Pawn)
+                    if (_pieceType == PieceType.Pawn)
                     {
                         SetOptions(_lowerInput[0]);
                     }
-                    TargetPosition = Position.FromAlgebraic(_lowerInput.Substring(1));
+                    _targetPosition = Position.FromAlgebraic(_lowerInput.Substring(1));
                     break;
 
                 case 4:
                     CheckSetPieceType();
-                    if (PieceType == PieceType.Pawn)
+                    if (_pieceType == PieceType.Pawn)
                     {
                         SetOptions(_lowerInput[0]);
                     }
                     SetOptions(_lowerInput[1]);
-                    TargetPosition = Position.FromAlgebraic(_lowerInput.Substring(2));
+                    _targetPosition = Position.FromAlgebraic(_lowerInput.Substring(2));
                     break;
 
                 case 5:
                     CheckSetPieceType();
-                    if (PieceType == PieceType.Pawn)
+                    if (_pieceType == PieceType.Pawn)
                     {
                         SetOptions(_lowerInput[0]);
                     }
                     SetOptions(_lowerInput[1]);
                     SetOptions(_lowerInput[2]);
-                    TargetPosition = Position.FromAlgebraic(_lowerInput.Substring(3));
+                    _targetPosition = Position.FromAlgebraic(_lowerInput.Substring(3));
                     break;
 
                 case 6:
@@ -159,32 +157,48 @@ namespace cachCore.utils
                     SetOptions(_lowerInput[1]);
                     SetOptions(_lowerInput[2]);
                     SetOptions(_lowerInput[3]);
-                    TargetPosition = Position.FromAlgebraic(_lowerInput.Substring(4));
+                    _targetPosition = Position.FromAlgebraic(_lowerInput.Substring(4));
                     break;
             }
 
-            StartPosition = new Position(_startRow, _startColumn);
+            _startPosition = new Position(_startRow, _startColumn);
+
+            CreateMoveDescriptor();
+        }
+
+        private void CreateMoveDescriptor()
+        {
+            MoveDescriptor = new MoveDescriptor()
+            {
+                PieceType = _pieceType,
+                TargetPosition = _targetPosition,
+                StartPosition = _startPosition,
+                IsKingSideCastle = _isKingSideCastle,
+                IsQueenSideCastle = _isQueenSideCastle,
+                IsKill = _isKill,
+                IsDrawOffer = _isDrawOffer
+            };
         }
 
         private void CheckSetPieceType()
         {
             if (_input[0] == 'B')
             {
-                PieceType = PieceType.Bishop;
+                _pieceType = PieceType.Bishop;
                 return;
             }
             if (!_charToPieceTypeMap.ContainsKey(_lowerInput[0]))
             {
                 throw new CachException("Invalid first char in input: " + _input);
             }
-            PieceType = _charToPieceTypeMap[_lowerInput[0]];
+            _pieceType = _charToPieceTypeMap[_lowerInput[0]];
         }
 
         private void SetOptions(char opt)
         {
             if (opt == 'x')
             {
-                IsKill = true;
+                _isKill = true;
             }
             else if (char.IsDigit(opt))
             {

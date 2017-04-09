@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using cachCore.models;
 using cachCore.enums;
+using cachCore.rules;
 
 namespace cachCore.utils
 {
@@ -63,17 +64,62 @@ namespace cachCore.utils
             return board;
         }
 
-        public string BoardToFEN(Board board)
+        public string BoardToFEN(Board board, ItemColor colorToMove)
         {
             string fen = "";
 
+            // add the board spec
             for (int row = 7; row >= 0; row--)
             {
-                for (int col = 0; col < 8; col++)
+                int col = 0;
+                int emptyCount = 0;
+
+                while (col < 8)
                 {
+                    BoardSquare square = board[row, col];
+                    if (!square.IsOccupied())
+                    {
+                        emptyCount++;
+                    }
+                    else
+                    {
+                        if (emptyCount > 0)
+                        {
+                            fen += emptyCount.ToString();
+                            emptyCount = 0;
+                        }
+                        fen += GetPieceChar(square.Piece);
+                    }
+
+                    col++;
+                }
+
+                if (emptyCount > 0)
+                {
+                    fen += emptyCount.ToString();
+                }
+
+                if (row != 0)
+                {
+                    fen += "/";
                 }
             }
 
+            // add the next-to-move spec
+            fen += colorToMove == ItemColor.Black ? " b " : " w ";
+
+            // add the castle spec
+            bool bk = new CastleAttemptValidationHelper(board, ItemColor.Black, isKingSideCastle: true).CanCastle;
+            bool bq = new CastleAttemptValidationHelper(board, ItemColor.Black, isKingSideCastle: false).CanCastle;
+            bool wk = new CastleAttemptValidationHelper(board, ItemColor.White, isKingSideCastle: true).CanCastle;
+            bool wq = new CastleAttemptValidationHelper(board, ItemColor.White, isKingSideCastle: false).CanCastle;
+            string cs = "";
+            cs += wk ? "K" : "";
+            cs += wq ? "Q" : "";
+            cs += bk ? "k" : "";
+            cs += bq ? "q" : "";
+            fen += cs.Length > 0 ? cs + " -" : "- -";
+            
             return fen;
         }
 
@@ -108,6 +154,40 @@ namespace cachCore.utils
             }
 
             return p;
+        }
+
+        private static char GetPieceChar(Piece piece)
+        {
+            char pieceChar = '?';
+
+            switch (piece.PieceType)
+            {
+                case PieceType.King:
+                    pieceChar = 'k';
+                    break;
+                case PieceType.Queen:
+                    pieceChar = 'q';
+                    break;
+                case PieceType.Rook:
+                    pieceChar = 'r';
+                    break;
+                case PieceType.Bishop:
+                    pieceChar = 'b';
+                    break;
+                case PieceType.Knight:
+                    pieceChar = 'n';
+                    break;
+                case PieceType.Pawn:
+                    pieceChar = 'p';
+                    break;
+            }
+
+            if (piece.PieceColor == ItemColor.White)
+            {
+                pieceChar = char.ToUpper(pieceChar);
+            }
+
+            return pieceChar;
         }
     }
 }

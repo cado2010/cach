@@ -50,6 +50,8 @@
     <Compile Include="modelTests\BoardSaveLoadTests.cs" />
     <Compile Include="modelTests\BoardInitTests.cs" />
     <Compile Include="modelTests\PieceTests.cs" />
+    <Compile Include="ruletests\CastleAttemptValidationHelperTests.cs" />
+    <Compile Include="ruletests\InCheckHelperTests.cs" />
     <Compile Include="TestsInitializer.cs" />
     <Compile Include="utilTests\FENSerializerTests.cs" />
     <Compile Include="utilTests\MoveInputParserTests.cs" />

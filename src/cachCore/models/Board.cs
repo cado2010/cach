@@ -13,6 +13,30 @@ namespace cachCore.models
 {
     public class Board
     {
+        [JsonProperty]
+        public string Id { get; private set; }
+
+        [JsonProperty]
+        public bool IsCheckMate { get; private set; }
+
+        [JsonProperty]
+        public bool IsStaleMate { get; private set; }
+
+        [JsonProperty]
+        public bool IsDrawOffer { get; private set; }
+
+        [JsonProperty]
+        public bool InCheck { get; private set; }
+
+        [JsonProperty]
+        public ItemColor PlayerInCheck { get; private set; }
+
+        [JsonIgnore]
+        public bool IsGameOver { get { return IsCheckMate || IsStaleMate || IsDrawOffer; } }
+
+        [JsonProperty]
+        public ItemColor Winner { get; private set; }
+
         /// <summary>
         /// Main board of squares
         /// </summary>
@@ -56,6 +80,9 @@ namespace cachCore.models
         {
             _logger = LogManager.GetLogger(GetType().Name);
 
+            Id = Guid.NewGuid().ToString();
+            _logger.Debug($"Board: {Id} created");
+
             _board = new BoardSquare[8, 8]; // [row, col]
             _boardHistory = new BoardHistory();
 
@@ -64,8 +91,20 @@ namespace cachCore.models
             _killedMaterial[ItemColor.White] = new List<Piece>();
 
             Init(initStartingPosition);
+            _logger.Debug($"Board: {Id} created");
+        }
 
-            _logger.Debug($"Board: created");
+        public void EndGame()
+        {
+            // delete all pieces from Piece Map
+            IList<Piece> p0 = GetAllActivePieces(ItemColor.Black);
+            IList<Piece> p1 = GetAllActivePieces(ItemColor.White);
+            List<Piece> k = new List<Piece>();
+            k.AddRange(_killedMaterial.SelectMany(kv => kv.Value));
+
+            Piece.Remove(p0);
+            Piece.Remove(p1);
+            Piece.Remove(k);
         }
 
         /// <summary>
@@ -270,11 +309,11 @@ namespace cachCore.models
         {
             try
             {
-                MoveInputParser mip = null;
+                MoveDescriptor md = null;
 
                 try
                 {
-                    mip = new MoveInputParser(move);
+                    md = new MoveInputParser(move).MoveDescriptor;
                 }
                 catch(CachException ex)
                 {
@@ -282,13 +321,36 @@ namespace cachCore.models
                     return MoveErrorType.InvalidFormat;
                 }
 
-                if (!mip.IsValid)
+                if (!md.IsValid)
                 {
                     _logger.Info($"Move[{pieceColor}]: invalid format: {move}");
                     return MoveErrorType.InvalidFormat;
                 }
 
-                IList<Piece> pieces = GetMoveInputPieces(pieceColor, mip);
+                // handle draw offer - and shutdown game
+                if (md.IsDrawOffer)
+                {
+                    IsDrawOffer = true;
+                    _logger.Info($"Move[{pieceColor}]: game drawn: {move}");
+                    return MoveErrorType.Ok;
+                }
+
+                // handle Castle move as it involves special steps
+                if (md.IsCastle)
+                {
+                    MoveErrorType err = MoveCastle(pieceColor, md);
+                    if (err == MoveErrorType.Ok)
+                    {
+                        MoveCommit();
+                    }
+                    else
+                    {
+                        _logger.Info($"Move[{pieceColor}]: invalid castle: {move}");
+                    }
+                    return err;
+                }
+
+                IList<Piece> pieces = GetMoveInputPieces(pieceColor, md);
                 if (pieces == null || pieces.Count == 0)
                 {
                     // no such piece
@@ -301,7 +363,7 @@ namespace cachCore.models
                 Piece pieceToMove = null;
                 foreach (var piece in pieces)
                 {
-                    if (IsWithinPieceRange(piece, mip.TargetPosition))
+                    if (IsWithinPieceRange(piece, md.TargetPosition))
                     {
                         if (pieceToMove != null)
                         {
@@ -325,10 +387,10 @@ namespace cachCore.models
 
                 // if we reach here, then there is a potential piece that can be moved
                 // so attempt the move and check for Check of this color, if in Check, then move is invalid
-                bool pieceKilled = MoveBegin(pieceToMove, mip.TargetPosition);
+                bool pieceKilled = MoveBegin(pieceToMove, md.TargetPosition);
 
                 // piece must get killed for kill spec in move input - or else its an invalid move spec
-                if (mip.IsKill && !pieceKilled)
+                if (md.IsKill && !pieceKilled)
                 {
                     // invalid kill
                     _logger.Info($"Move[{pieceColor}]: nothing to kill: {move}");
@@ -352,6 +414,9 @@ namespace cachCore.models
                 // if we reach here, then the move is valid
                 MoveCommit();
 
+                // check game status
+                CheckGameStatus();
+
                 _logger.Debug($"Move[{pieceColor}]: valid move: {move}");
                 return MoveErrorType.Ok;
             }
@@ -364,6 +429,56 @@ namespace cachCore.models
 
         //-------------------------------------------------------------------------------
         // private impl
+
+        private void CheckGameStatus()
+        {
+            // either color in Mate
+            var imHelper = new InMateHelper(this, ItemColor.Black);
+            if (imHelper.IsCheckMate)
+            {
+                IsCheckMate = true;
+                Winner = ItemColor.White;
+                return;
+            }
+            else if (imHelper.IsStaleMate)
+            {
+                // draw
+                IsStaleMate = true;
+                return;
+            }
+            else
+            {
+                imHelper = new InMateHelper(this, ItemColor.White);
+                if (imHelper.IsCheckMate)
+                {
+                    IsCheckMate = true;
+                    Winner = ItemColor.Black;
+                    return;
+                }
+                else if (imHelper.IsStaleMate)
+                {
+                    // draw
+                    IsStaleMate = true;
+                    return;
+                }
+            }
+
+            InCheck = false;
+
+            // TODO: optimize this - dont need to check both!
+            var icHelper = new InCheckHelper(this, ItemColor.White);
+            if (icHelper.IsInCheck)
+            {
+                InCheck = true;
+                PlayerInCheck = ItemColor.White;
+            }
+            icHelper = new InCheckHelper(this, ItemColor.Black);
+            if (icHelper.IsInCheck)
+            {
+                InCheck = true;
+                PlayerInCheck = ItemColor.Black;
+            }
+        }
 
         /// <summary>
         /// Initializes game board with pieces and positions
@@ -502,16 +617,16 @@ namespace cachCore.models
             }
         }
 
-        private IList<Piece> GetMoveInputPieces(ItemColor pieceColor, MoveInputParser mip)
+        private IList<Piece> GetMoveInputPieces(ItemColor pieceColor, MoveDescriptor md)
         {
             IList<Piece> mipPieces;
 
-            IList<Piece> pieces = GetPieces(pieceColor, mip.PieceType);
-            if (mip.IsStartPositionInfoAvailable)
+            IList<Piece> pieces = GetPieces(pieceColor, md.PieceType);
+            if (md.IsStartPositionInfoAvailable)
             {
                 mipPieces = pieces.Where(p =>
-                    p.Position.IsSameFile(mip.StartPosition) ||
-                    p.Position.IsSameRank(mip.StartPosition)).ToList();
+                    p.Position.IsSameFile(md.StartPosition) ||
+                    p.Position.IsSameRank(md.StartPosition)).ToList();
             }
             else
             {
@@ -519,6 +634,36 @@ namespace cachCore.models
             }
 
             return mipPieces;
+        }
+
+        private MoveErrorType MoveCastle(ItemColor pieceColor, MoveDescriptor md)
+        {
+            MoveErrorType result;
+
+            if (!md.IsCastle)
+            {
+                throw new CachException("MoveCastle: move descriptor does not specify a castling move");
+            }
+
+            var cavHelper = new CastleAttemptValidationHelper(this, pieceColor, md.IsKingSideCastle);
+            if (cavHelper.CanCastle)
+            {
+                // push current into board history
+                _boardHistory.PushPosition(cavHelper.Rook);
+                _boardHistory.PushPosition(cavHelper.King);
+
+                // move the King and Rook into position
+                mMove(cavHelper.King, cavHelper.KingPositionAfterCastle);
+                mMove(cavHelper.Rook, cavHelper.RookPositionAfterCastle);
+
+                result = MoveErrorType.Ok;
+            }
+            else
+            {
+                result = MoveErrorType.InvalidCastle;
+            }
+
+            return result;
         }
 
         private bool MoveBegin(Piece piece, Position target)
@@ -550,6 +695,27 @@ namespace cachCore.models
             mMove(piece, target);
 
             return pieceKilled;
+        }
+
+        private void MovePromoteBegin(Piece pieceOriginal, Piece piecePromoted, Position target)
+        {
+            // TODO: implement MoveBegin with promotion support
+        }
+
+        private void MoveCommit(Piece piecePromoted = null)
+        {
+            // TODO:
+            // record move into Move History
+            // if piecePromoted is not null, add to piece map
+        }
+
+        private void MoveRevert()
+        {
+            // pop history until level reaches _previousHistoryLevel and undo each
+            while (_boardHistory.Level != _previousHistoryLevel)
+            {
+                mRevert();
+            }
         }
 
         private void mMove(Piece piece, Position target)
@@ -589,27 +755,6 @@ namespace cachCore.models
 
             // set unkilled piece back into BoardSquare
             this[piece.Position].SetPiece(piece);
-        }
-
-        private void MovePromoteBegin(Piece pieceOriginal, Piece piecePromoted, Position target)
-        {
-            // TODO: implement MoveBegin with promotion support
-        }
-
-        private void MoveCommit(Piece piecePromoted = null)
-        {
-            // TODO:
-            // record move into Move History
-            // if piecePromoted is not null, add to piece map
-        }
-
-        private void MoveRevert()
-        {
-            // pop history until level reaches _previousHistoryLevel and undo each
-            while (_boardHistory.Level != _previousHistoryLevel)
-            {
-                mRevert();
-            }
         }
 
         /// <summary>
