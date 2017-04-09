@@ -43,7 +43,7 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(2, 674);
+            this.label1.Location = new System.Drawing.Point(2, 702);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(37, 13);
             this.label1.TabIndex = 0;
@@ -51,14 +51,14 @@
             // 
             // textBoxMove
             // 
-            this.textBoxMove.Location = new System.Drawing.Point(44, 672);
+            this.textBoxMove.Location = new System.Drawing.Point(44, 700);
             this.textBoxMove.Name = "textBoxMove";
             this.textBoxMove.Size = new System.Drawing.Size(100, 20);
             this.textBoxMove.TabIndex = 1;
             // 
             // buttonMove
             // 
-            this.buttonMove.Location = new System.Drawing.Point(150, 670);
+            this.buttonMove.Location = new System.Drawing.Point(150, 698);
             this.buttonMove.Name = "buttonMove";
             this.buttonMove.Size = new System.Drawing.Size(75, 23);
             this.buttonMove.TabIndex = 2;
@@ -69,7 +69,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(248, 675);
+            this.label2.Location = new System.Drawing.Point(248, 703);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(53, 13);
             this.label2.TabIndex = 0;
@@ -78,7 +78,7 @@
             // labelNextToMove
             // 
             this.labelNextToMove.AutoSize = true;
-            this.labelNextToMove.Location = new System.Drawing.Point(307, 675);
+            this.labelNextToMove.Location = new System.Drawing.Point(307, 703);
             this.labelNextToMove.Name = "labelNextToMove";
             this.labelNextToMove.Size = new System.Drawing.Size(68, 13);
             this.labelNextToMove.TabIndex = 0;
@@ -87,7 +87,7 @@
             // labelGameStatus
             // 
             this.labelGameStatus.AutoSize = true;
-            this.labelGameStatus.Location = new System.Drawing.Point(453, 675);
+            this.labelGameStatus.Location = new System.Drawing.Point(453, 703);
             this.labelGameStatus.Name = "labelGameStatus";
             this.labelGameStatus.Size = new System.Drawing.Size(156, 13);
             this.labelGameStatus.TabIndex = 0;
@@ -96,7 +96,7 @@
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(394, 675);
+            this.label4.Location = new System.Drawing.Point(394, 703);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(38, 13);
             this.label4.TabIndex = 0;
@@ -104,7 +104,7 @@
             // 
             // buttonWhiteView
             // 
-            this.buttonWhiteView.Location = new System.Drawing.Point(150, 699);
+            this.buttonWhiteView.Location = new System.Drawing.Point(150, 727);
             this.buttonWhiteView.Name = "buttonWhiteView";
             this.buttonWhiteView.Size = new System.Drawing.Size(25, 23);
             this.buttonWhiteView.TabIndex = 2;
@@ -114,7 +114,7 @@
             // 
             // buttonBlackView
             // 
-            this.buttonBlackView.Location = new System.Drawing.Point(181, 699);
+            this.buttonBlackView.Location = new System.Drawing.Point(181, 727);
             this.buttonBlackView.Name = "buttonBlackView";
             this.buttonBlackView.Size = new System.Drawing.Size(25, 23);
             this.buttonBlackView.TabIndex = 2;
@@ -125,7 +125,7 @@
             // checkBoxAlwaysCurrent
             // 
             this.checkBoxAlwaysCurrent.AutoSize = true;
-            this.checkBoxAlwaysCurrent.Location = new System.Drawing.Point(251, 703);
+            this.checkBoxAlwaysCurrent.Location = new System.Drawing.Point(251, 731);
             this.checkBoxAlwaysCurrent.Name = "checkBoxAlwaysCurrent";
             this.checkBoxAlwaysCurrent.Size = new System.Drawing.Size(148, 17);
             this.checkBoxAlwaysCurrent.TabIndex = 3;
@@ -137,7 +137,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(880, 753);
+            this.ClientSize = new System.Drawing.Size(881, 775);
             this.Controls.Add(this.checkBoxAlwaysCurrent);
             this.Controls.Add(this.buttonBlackView);
             this.Controls.Add(this.buttonWhiteView);

@@ -278,7 +278,7 @@ namespace cachCore.models
                     {
                         if (piece.PieceType == PieceType.Pawn && square.IsOccupied())
                         {
-                            // pawns cannot capture any other way
+                            // pawns cannot capture straight - so have to quit this path
                             break;
                         }
 

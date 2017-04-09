@@ -15,8 +15,6 @@ namespace cach
         private Game _game;
         private IBoardRenderer _boardRenderer;
 
-        private Dictionary<ItemColor, Dictionary<PieceType, Image>> _pieceImageMap;
-
         const int tileSize = 80;
         const int gridSize = 8;
 
