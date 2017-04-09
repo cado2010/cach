@@ -35,6 +35,9 @@
             this.labelNextToMove = new System.Windows.Forms.Label();
             this.labelGameStatus = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
+            this.buttonWhiteView = new System.Windows.Forms.Button();
+            this.buttonBlackView = new System.Windows.Forms.Button();
+            this.checkBoxAlwaysCurrent = new System.Windows.Forms.CheckBox();
             this.SuspendLayout();
             // 
             // label1
@@ -99,11 +102,45 @@
             this.label4.TabIndex = 0;
             this.label4.Text = "Game:";
             // 
+            // buttonWhiteView
+            // 
+            this.buttonWhiteView.Location = new System.Drawing.Point(150, 699);
+            this.buttonWhiteView.Name = "buttonWhiteView";
+            this.buttonWhiteView.Size = new System.Drawing.Size(25, 23);
+            this.buttonWhiteView.TabIndex = 2;
+            this.buttonWhiteView.Text = "W";
+            this.buttonWhiteView.UseVisualStyleBackColor = true;
+            this.buttonWhiteView.Click += new System.EventHandler(this.buttonWhiteView_Click);
+            // 
+            // buttonBlackView
+            // 
+            this.buttonBlackView.Location = new System.Drawing.Point(181, 699);
+            this.buttonBlackView.Name = "buttonBlackView";
+            this.buttonBlackView.Size = new System.Drawing.Size(25, 23);
+            this.buttonBlackView.TabIndex = 2;
+            this.buttonBlackView.Text = "B";
+            this.buttonBlackView.UseVisualStyleBackColor = true;
+            this.buttonBlackView.Click += new System.EventHandler(this.buttonBlackView_Click);
+            // 
+            // checkBoxAlwaysCurrent
+            // 
+            this.checkBoxAlwaysCurrent.AutoSize = true;
+            this.checkBoxAlwaysCurrent.Location = new System.Drawing.Point(251, 703);
+            this.checkBoxAlwaysCurrent.Name = "checkBoxAlwaysCurrent";
+            this.checkBoxAlwaysCurrent.Size = new System.Drawing.Size(148, 17);
+            this.checkBoxAlwaysCurrent.TabIndex = 3;
+            this.checkBoxAlwaysCurrent.Text = "Always show current view";
+            this.checkBoxAlwaysCurrent.UseVisualStyleBackColor = true;
+            this.checkBoxAlwaysCurrent.CheckedChanged += new System.EventHandler(this.checkBoxAlwaysShowCurrent_CheckedChanged);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(880, 753);
+            this.Controls.Add(this.checkBoxAlwaysCurrent);
+            this.Controls.Add(this.buttonBlackView);
+            this.Controls.Add(this.buttonWhiteView);
             this.Controls.Add(this.buttonMove);
             this.Controls.Add(this.textBoxMove);
             this.Controls.Add(this.label4);
@@ -129,6 +166,9 @@
         private System.Windows.Forms.Label labelNextToMove;
         private System.Windows.Forms.Label labelGameStatus;
         private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.Button buttonWhiteView;
+        private System.Windows.Forms.Button buttonBlackView;
+        private System.Windows.Forms.CheckBox checkBoxAlwaysCurrent;
     }
 }
 

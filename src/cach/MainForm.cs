@@ -129,7 +129,9 @@ namespace cach
 
         private void MainForm_Paint(object sender, PaintEventArgs e)
         {
-            Render(e.Graphics, _game.ToPlay);
+            ItemColor renderColor = checkBoxAlwaysCurrent.Checked ? _alwaysShowColor : 
+                (_forceViewSet ? _forceViewColor : _game.ToPlay);
+            Render(e.Graphics, renderColor);
         }
 
         private void buttonMove_Click(object sender, EventArgs e)
@@ -161,8 +163,33 @@ namespace cach
                     }
                 }
 
+                _forceViewSet = false;
                 Invalidate();
             }
+        }
+
+        private bool _forceViewSet = false;
+        private ItemColor _forceViewColor;
+        private ItemColor _alwaysShowColor;
+
+        private void buttonWhiteView_Click(object sender, EventArgs e)
+        {
+            _forceViewSet = true;
+            _forceViewColor = ItemColor.White;
+            Invalidate();
+        }
+
+        private void buttonBlackView_Click(object sender, EventArgs e)
+        {
+            _forceViewSet = true;
+            _forceViewColor = ItemColor.Black;
+            Invalidate();
+        }
+
+        private void checkBoxAlwaysShowCurrent_CheckedChanged(object sender, EventArgs e)
+        {
+            _alwaysShowColor = _forceViewSet ? _forceViewColor : _game.ToPlay;
+            Invalidate();
         }
     }
 }
