@@ -98,45 +98,16 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="res\bB.png" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="res\bK.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="res\bN.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="res\bp.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="res\bQ.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="res\bR.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="res\wB.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="res\wK.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="res\wN.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="res\wp.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="res\wQ.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="res\wR.png" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\cachCore\cachCore.csproj">
       <Project>{F0D17A4C-C611-49E3-A6E5-6663455BB239}</Project>
       <Name>cachCore</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\cachRendering\cachRendering.csproj">
+      <Project>{562124bf-20a0-4be0-8c67-5e173e86bf03}</Project>
+      <Name>cachRendering</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

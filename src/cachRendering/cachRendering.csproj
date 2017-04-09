@@ -43,7 +43,62 @@
   <ItemGroup>
     <Compile Include="BoardRenderer.cs" />
     <Compile Include="IBoardRenderer.cs" />
+    <Compile Include="models\IRenderContext.cs" />
+    <Compile Include="models\GraphicsRenderContext.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Resource.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resource.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\bB.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\bK.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\bN.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\bp.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\bQ.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\bR.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\wB.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\wK.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\wN.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\wp.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\wQ.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\wR.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resource.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resource.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\cachCore\cachCore.csproj">
+      <Project>{F0D17A4C-C611-49E3-A6E5-6663455BB239}</Project>
+      <Name>cachCore</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
