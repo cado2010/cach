@@ -276,6 +276,12 @@ namespace cachCore.models
                     }
                     else
                     {
+                        if (piece.PieceType == PieceType.Pawn && square.IsOccupied())
+                        {
+                            // pawns cannot capture any other way
+                            break;
+                        }
+
                         if (square.IsOccupiedByPieceOfColor(piece.PieceColor))
                         {
                             break;
