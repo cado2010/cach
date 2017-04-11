@@ -62,8 +62,6 @@ namespace cachRendering
 
         private void PaintBoard(Graphics g, ItemColor toPlay, Point luOffset, int tileSize)
         {
-            var clr1 = Color.DarkGray;
-            var clr2 = Color.White;
             Brush brush;
 
             // double for loop to handle all rows and columns
@@ -78,9 +76,9 @@ namespace cachRendering
 
                     // color the backgrounds
                     if (row % 2 == 0)
-                        brush = col % 2 != 0 ? Brushes.DarkGray : Brushes.White;
+                        brush = col % 2 != 0 ? Brushes.SaddleBrown : Brushes.SandyBrown;
                     else
-                        brush = col % 2 != 0 ? Brushes.White : Brushes.DarkGray;
+                        brush = col % 2 != 0 ? Brushes.SandyBrown : Brushes.SaddleBrown;
 
                     g.FillRectangle(brush, loc.X, loc.Y, tileSize, tileSize);
                 }

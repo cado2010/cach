@@ -114,5 +114,29 @@ namespace cachCoreTests
             Board board = FENSerializer.BoardFromFEN("3k4/8/8/8/4PP2/3pQ3/4K3/8 w - -");
             Assert.AreEqual(board.Move(ItemColor.White, "Qxd3"), MoveErrorType.Ok);
         }
+
+        [Test]
+        public void pawn_x_pawn_should_succeed()
+        {
+            Board board = FENSerializer.BoardFromFEN("2k5/8/8/8/3p4/8/2P5/5K2 w - -");
+            Assert.AreEqual(board.Move(ItemColor.White, "c3"), MoveErrorType.Ok);
+            Assert.AreEqual(board.Move(ItemColor.Black, "dxc3"), MoveErrorType.Ok);
+        }
+
+        [Test]
+        public void en_passant_should_succeed_1()
+        {
+            Board board = FENSerializer.BoardFromFEN("2k5/8/8/8/3p4/8/2P5/5K2 w - -");
+            Assert.AreEqual(board.Move(ItemColor.White, "c4"), MoveErrorType.Ok);
+            Assert.AreEqual(board.Move(ItemColor.Black, "dxc3"), MoveErrorType.Ok);
+        }
+
+        [Test]
+        public void en_passant_should_succeed_2()
+        {
+            Board board = FENSerializer.BoardFromFEN("2k5/3p4/8/2P5/8/8/8/5K2 w - -");
+            Assert.AreEqual(board.Move(ItemColor.Black, "d5"), MoveErrorType.Ok);
+            Assert.AreEqual(board.Move(ItemColor.White, "cxd6"), MoveErrorType.Ok);
+        }
     }
 }

@@ -62,6 +62,12 @@ namespace cachCore.models
         [JsonProperty]
         private readonly Dictionary<ItemColor, IList<Piece>> _killedMaterial;
 
+        /// <summary>
+        /// Current en passant position if any, or else Position.Invalid
+        /// </summary>
+        [JsonProperty]
+        private Position _enPassant;
+
         [JsonProperty]
         private int _previousHistoryLevel;
 
@@ -89,6 +95,8 @@ namespace cachCore.models
             _killedMaterial = new Dictionary<ItemColor, IList<Piece>>();
             _killedMaterial[ItemColor.Black] = new List<Piece>();
             _killedMaterial[ItemColor.White] = new List<Piece>();
+
+            _enPassant = Position.Invalid;
 
             Init(initStartingPosition);
             _logger.Debug($"Board: {Id} created");
@@ -253,6 +261,7 @@ namespace cachCore.models
             // prune paths that are blocked due to board population
             IList<IList<Position>> constrainedPaths = new List<IList<Position>>();
 
+            // now constrain the piece's movements using the current Board situation
             foreach (var path in m.Paths)
             {
                 List<Position> constrainedPath = new List<Position>();
@@ -271,8 +280,11 @@ namespace cachCore.models
                         {
                             constrainedPath.Add(pos);
                         }
-
-                        // TODO: implement en passant rule checks here
+                        else if (!square.IsOccupied() && _enPassant.IsValid && pos.IsSame(_enPassant))
+                        {
+                            // allow en passant move
+                            constrainedPath.Add(pos);
+                        }
                     }
                     else
                     {
@@ -284,6 +296,7 @@ namespace cachCore.models
 
                         if (square.IsOccupiedByPieceOfColor(piece.PieceColor))
                         {
+                            // own piece occupying, so prune path at this point
                             break;
                         }
 
@@ -291,6 +304,8 @@ namespace cachCore.models
 
                         if (square.IsOccupied())
                         {
+                            // piece can only move until capture of enemy position, so
+                            // prune path at this point
                             break;
                         }
                     }
@@ -347,7 +362,7 @@ namespace cachCore.models
                     MoveErrorType err = MoveCastle(pieceColor, md);
                     if (err == MoveErrorType.Ok)
                     {
-                        MoveCommit();
+                        MoveCommit(md);
                     }
                     else
                     {
@@ -391,6 +406,8 @@ namespace cachCore.models
                     return MoveErrorType.NoPieceInRange;
                 }
 
+                Position startPosition = pieceToMove.Position;
+
                 // if we reach here, then there is a potential piece that can be moved
                 // so attempt the move and check for Check of this color, if in Check, then move is invalid
                 bool pieceKilled = MoveBegin(pieceToMove, md.TargetPosition);
@@ -418,10 +435,8 @@ namespace cachCore.models
                 }
 
                 // if we reach here, then the move is valid
-                MoveCommit();
-
-                // check game status
-                CheckGameStatus();
+                md.StartPosition = startPosition;
+                MoveCommit(md, pieceToMove);
 
                 _logger.Debug($"Move[{pieceColor}]: valid move: {move}");
                 return MoveErrorType.Ok;
@@ -685,11 +700,38 @@ namespace cachCore.models
 
             _previousHistoryLevel = _boardHistory.Level;
 
+            Piece previousPiece = null;
             if (square.IsOccupied())
             {
-                Piece previousPiece = square.Piece;
+                previousPiece = square.Piece;
+            }
+            else
+            {
+                // check for en passant and kill that piece
+                if (piece.PieceType == PieceType.Pawn && _enPassant.IsValid && target.IsSame(_enPassant))
+                {
+                    int row;
+                    if (BoardUtils.GetOtherColor(piece.PieceColor) == ItemColor.White)
+                    {
+                        row = BoardUtils.GetPawnStartRow(ItemColor.White) + 2;
+                    }
+                    else
+                    {
+                        row = BoardUtils.GetPawnStartRow(ItemColor.Black) - 2;
+                    }
+                    if (!this[row, target.Column].IsOccupiedByPieceOfColorAndType(
+                        BoardUtils.GetOtherColor(piece.PieceColor), PieceType.Pawn))
+                    {
+                        throw new CachException("En passant move attempted but board position is invalid");
+                    }
 
-                // record enemy alive status
+                    previousPiece = this[row, target.Column].Piece;
+                }
+            }
+
+            if (previousPiece != null)
+            {
+                // record enemy alive status and then kill it
                 _boardHistory.PushAliveStatus(previousPiece);
                 mKill(previousPiece);
 
@@ -703,16 +745,61 @@ namespace cachCore.models
             return pieceKilled;
         }
 
+        /// <summary>
+        /// Checks the current intentended move and if pawn moving two steps, sets the current
+        /// en passant position for en passant rule implementation
+        /// </summary>
+        /// <param name="piece"></param>
+        /// <param name="startPosition"></param>
+        /// <param name="targetPosition"></param>
+        private void CheckSetEnPassant(Piece piece, Position startPosition, Position targetPosition)
+        {
+            bool set = false;
+
+            if (piece.PieceType == PieceType.Pawn &&
+                startPosition.IsSameFile(targetPosition) &&
+                Math.Abs(targetPosition.Row - startPosition.Row) > 1)
+            {
+                int row;
+                if (piece.PieceColor == ItemColor.White)
+                {
+                    row = BoardUtils.GetPawnStartRow(ItemColor.White) + 1;
+                }
+                else
+                {
+                    row = BoardUtils.GetPawnStartRow(ItemColor.Black) - 1;
+                }
+
+                _enPassant = new Position(row, startPosition.Column);
+                set = true;
+            }
+
+            if (!set)
+            {
+                // clear en passant due to this last move
+                _enPassant = Position.Invalid;
+            }
+        }
+
         private void MovePromoteBegin(Piece pieceOriginal, Piece piecePromoted, Position target)
         {
             // TODO: implement MoveBegin with promotion support
         }
 
-        private void MoveCommit(Piece piecePromoted = null)
+        private void MoveCommit(MoveDescriptor md, Piece movingPiece = null, Piece piecePromoted = null)
         {
             // TODO:
             // record move into Move History
             // if piecePromoted is not null, add to piece map
+
+            // check and set en passant
+            if (movingPiece != null)
+            {
+                CheckSetEnPassant(movingPiece, md.StartPosition, md.TargetPosition);
+            }
+
+            // check and set game status after valid move
+            CheckGameStatus();
         }
 
         private void MoveRevert()

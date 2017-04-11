@@ -23,5 +23,15 @@ namespace cachCore.utils
         {
             return pieceColor == ItemColor.Black ? 6 : 1;
         }
+
+        /// <summary>
+        /// Returns the other color
+        /// </summary>
+        /// <param name="color"></param>
+        /// <returns></returns>
+        public static ItemColor GetOtherColor(ItemColor color)
+        {
+            return color == ItemColor.Black ? ItemColor.White : ItemColor.Black;
+        }
     }
 }

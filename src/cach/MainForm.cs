@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
-using System.Collections.Generic;
 using cachCore.models;
 using cachCore.enums;
 using cachCore.controllers;
@@ -29,6 +28,8 @@ namespace cach
 
             labelNextToMove.Text = _game.ToPlay.ToString();
             labelGameStatus.Text = "";
+
+            DoubleBuffered = true;
         }
 
         public MainForm()
@@ -66,7 +67,8 @@ namespace cach
 
                 if (_game.LastMoveError != MoveErrorType.Ok)
                 {
-                    MessageBox.Show(this, $"Move error: {_game.ToPlay.ToString()} cannot make move: {move}");
+                    MessageBox.Show(this, $"Move error: {_game.ToPlay.ToString()} cannot make move: {move}, " +
+                        $"reason: {_game.LastMoveError.ToString()}");
                 }
                 else
                 {
