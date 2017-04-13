@@ -8,6 +8,8 @@ namespace cachCore.utils
     /// </summary>
     public class MoveDescriptor
     {
+        public ItemColor PieceColor { get; set; }
+
         /// <summary>
         /// Piece Type specified by this move, must be available
         /// </summary>
@@ -33,6 +35,16 @@ namespace cachCore.utils
         /// Offer to draw is indicated by move input string: "(=)"
         /// </summary>
         public bool IsDrawOffer { get; set; }
+
+        /// <summary>
+        /// If this move specified a promotion of pawn reaching Rank 1 or 8
+        /// </summary>
+        public bool IsPromotion { get; set; }
+
+        /// <summary>
+        /// If IsPromotion == true, then what Piece type player specified
+        /// </summary>
+        public PieceType PromotedPieceType { get; set; }
 
         //-------------------------------------------------------------------------------
         // Derived properties

@@ -59,7 +59,7 @@ namespace cachCore.utils
             }
 
             // recreate active piece map from current Board
-            board.RebuildPieceMap();
+            board.RebuildPieceMapFromBoard();
 
             return board;
         }

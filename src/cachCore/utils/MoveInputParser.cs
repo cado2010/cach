@@ -10,12 +10,15 @@ namespace cachCore.utils
     /// </summary>
     public class MoveInputParser
     {
+        private ItemColor _pieceColor;
         private string _input;
+
         private string _lowerInput;
         private readonly static Dictionary<char, PieceType> _charToPieceTypeMap;
 
-        public MoveInputParser(string input)
+        public MoveInputParser(ItemColor pieceColor, string input)
         {
+            _pieceColor = pieceColor;
             _input = input.Trim();
             _lowerInput = _input.ToLower();
 
@@ -72,6 +75,9 @@ namespace cachCore.utils
 
         private bool _isDrawOffer;
 
+        private bool _isPromotion = false;
+        private PieceType _promotedPieceType = PieceType.Unknown;
+
         private void Parse()
         {
             _pieceType = PieceType.Unknown;
@@ -87,12 +93,15 @@ namespace cachCore.utils
                 throw new CachException("Movement input string has to be >= 2 chars");
             }
 
+            // special - check for draw offer
             if (_lowerInput == "(=)")
             {
                 _isDrawOffer = true;
                 CreateMoveDescriptor();
                 return;
             }
+        
+            // parse castling moves
             if (_lowerInput == "o-o")
             {
                 _pieceType = PieceType.King;
@@ -106,6 +115,16 @@ namespace cachCore.utils
                 _isQueenSideCastle = true;
                 CreateMoveDescriptor();
                 return;
+            }
+
+            // check for promotion options and set
+            // promotion is indicated through formats such as ...=<piece>
+            // for example e8=Q or d1=R
+            if (_input.Length > 2 && _input[_input.Length - 2] == '=')
+            {
+                SetPromotionOptions(_lowerInput);
+                _input = _input.Substring(0, _input.Length - 2);
+                _lowerInput = _input.ToLower();
             }
 
             if (_input.Length > 6)
@@ -168,15 +187,43 @@ namespace cachCore.utils
 
         private void CreateMoveDescriptor()
         {
+            // perform some sanity checks w.r.t a promotion attempt
+            if (_isPromotion)
+            {
+                // must be a pawn move
+                if (_pieceType != PieceType.Pawn)
+                {
+                    throw new CachException($"Invalid promotion request - not a pawn move: {_input}");
+                }
+
+                // pawn must reach Rank 8 or 1
+                if ((_pieceColor == ItemColor.Black && _targetPosition.Row != 0) ||
+                    (_pieceColor == ItemColor.White && _targetPosition.Row != 7))
+                {
+                    throw new CachException($"Invalid promotion request - pawn not reaching Rank 8 or 1 in input: {_input}");
+                }
+            }
+            else
+            {
+                // pawns cannot reach Rank 1/8 without promoting
+                if (_pieceType == PieceType.Pawn && (_targetPosition.Row == 0 || _targetPosition.Row == 7))
+                {
+                    throw new CachException($"Pawn cannot reach Rank 8 or 1 without promoting, input: {_input}");
+                }
+            }
+
             MoveDescriptor = new MoveDescriptor()
             {
+                PieceColor = _pieceColor,
                 PieceType = _pieceType,
                 TargetPosition = _targetPosition,
                 StartPosition = _startPosition,
                 IsKingSideCastle = _isKingSideCastle,
                 IsQueenSideCastle = _isQueenSideCastle,
                 IsKill = _isKill,
-                IsDrawOffer = _isDrawOffer
+                IsDrawOffer = _isDrawOffer,
+                IsPromotion = _isPromotion,
+                PromotedPieceType = _promotedPieceType
             };
         }
 
@@ -189,7 +236,7 @@ namespace cachCore.utils
             }
             if (!_charToPieceTypeMap.ContainsKey(_lowerInput[0]))
             {
-                throw new CachException("Invalid first char in input: " + _input);
+                throw new CachException($"Invalid first char in input: {_input}");
             }
             _pieceType = _charToPieceTypeMap[_lowerInput[0]];
         }
@@ -208,6 +255,34 @@ namespace cachCore.utils
             {
                 _startColumn = Position.ColumnFromFile(opt);
             }
+        }
+
+        private void SetPromotionOptions(string lowerInput)
+        {
+            switch (lowerInput[lowerInput.Length - 1])
+            {
+                case 'q':
+                    _promotedPieceType = PieceType.Queen;
+                    break;
+
+                case 'r':
+                    _promotedPieceType = PieceType.Rook;
+                    break;
+
+                case 'b':
+                    _promotedPieceType = PieceType.Bishop;
+                    break;
+
+                case 'n':
+                    _promotedPieceType = PieceType.Knight;
+                    break;
+
+                default:
+                    // no other option makes sense for promoted piece type
+                    throw new CachException($"Invalid promotion piece type in input: {_input}");
+            }
+
+            _isPromotion = true;
         }
     }
 }

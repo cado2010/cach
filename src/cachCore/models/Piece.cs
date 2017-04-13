@@ -23,6 +23,9 @@ namespace cachCore.models
 
         public bool HasMoved { get; private set; }
 
+        public bool IsPromoted { get; private set; }
+        public Piece PromotedTo { get; private set; }
+
         /// <summary>
         /// Instance tracking map: <id> -> Piece
         /// </summary>
@@ -71,7 +74,7 @@ namespace cachCore.models
             if (!isTemp)
             {
                 Id = System.Guid.NewGuid().ToString();
-                _pieceMap[Id] = this;
+                _pieceMap.TryAdd(Id, this);
             }
         }
 
@@ -109,6 +112,18 @@ namespace cachCore.models
             }
 
             IsAlive = true;
+        }
+
+        public void Promote(Piece promotedTo)
+        {
+            IsPromoted = true;
+            PromotedTo = promotedTo;
+        }
+
+        public void UnPromote()
+        {
+            IsPromoted = false;
+            PromotedTo = null;
         }
 
         /// <summary>

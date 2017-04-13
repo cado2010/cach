@@ -50,6 +50,7 @@ namespace cachCore.models
         private BoardHistory _boardHistory;
 
         /// <summary>
+        /// Active piece map - pieces currently participating in the game
         /// map: <PieceColor> -> { map: <PieceType> -> IList<Piece> }
         /// where King list must be [1] size
         /// </summary>
@@ -57,10 +58,11 @@ namespace cachCore.models
         private Dictionary<ItemColor, Dictionary<PieceType, IList<Piece>>> _pieceMap;
 
         /// <summary>
-        /// Material taken so far
+        /// map of all pieces (active, killed, promoted)
+        /// map: <PieceColor> -> List<Piece>
         /// </summary>
         [JsonProperty]
-        private readonly Dictionary<ItemColor, IList<Piece>> _killedMaterial;
+        private Dictionary<ItemColor, List<Piece>> _allMaterial;
 
         /// <summary>
         /// Current en passant position if any, or else Position.Invalid
@@ -92,10 +94,6 @@ namespace cachCore.models
             _board = new BoardSquare[8, 8]; // [row, col]
             _boardHistory = new BoardHistory();
 
-            _killedMaterial = new Dictionary<ItemColor, IList<Piece>>();
-            _killedMaterial[ItemColor.Black] = new List<Piece>();
-            _killedMaterial[ItemColor.White] = new List<Piece>();
-
             _enPassant = Position.Invalid;
 
             Init(initStartingPosition);
@@ -105,14 +103,10 @@ namespace cachCore.models
         public void EndGame()
         {
             // delete all pieces from Piece Map
-            IList<Piece> p0 = GetAllActivePieces(ItemColor.Black);
-            IList<Piece> p1 = GetAllActivePieces(ItemColor.White);
-            List<Piece> k = new List<Piece>();
-            k.AddRange(_killedMaterial.SelectMany(kv => kv.Value));
+            List<Piece> allPieces = new List<Piece>();
+            allPieces.AddRange(_allMaterial.SelectMany(kv => kv.Value));
 
-            Piece.Remove(p0);
-            Piece.Remove(p1);
-            Piece.Remove(k);
+            Piece.Remove(allPieces);
         }
 
         /// <summary>
@@ -216,7 +210,12 @@ namespace cachCore.models
                     new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto });
 
                 // repopulate active pieces
-                b.RebuildPieceMap();
+                // TODO: this is wrong
+                // b.RebuildPieceMap();
+
+                // TODO:
+                // (1) reset board pieces from all material
+                // (2) build active piece map from board
 
                 return b;
             }
@@ -231,7 +230,7 @@ namespace cachCore.models
         /// <summary>
         /// Rebuilds active piece map from current board (used when deserializing from JSON)
         /// </summary>
-        public void RebuildPieceMap()
+        public void RebuildPieceMapFromBoard()
         {
             CreatePieceMap(true);
 
@@ -243,7 +242,7 @@ namespace cachCore.models
                     Piece piece = square.Piece;
                     if (piece != null)
                     {
-                        _pieceMap[piece.PieceColor][piece.PieceType].Add(piece);
+                        AddToPieceMap(piece);
                     }
                 }
             }
@@ -334,7 +333,7 @@ namespace cachCore.models
 
                 try
                 {
-                    md = new MoveInputParser(move).MoveDescriptor;
+                    md = new MoveInputParser(pieceColor, move).MoveDescriptor;
                 }
                 catch(CachException ex)
                 {
@@ -359,7 +358,7 @@ namespace cachCore.models
                 // handle Castle move as it involves special steps
                 if (md.IsCastle)
                 {
-                    MoveErrorType err = MoveCastle(pieceColor, md);
+                    MoveErrorType err = MoveCastle(md);
                     if (err == MoveErrorType.Ok)
                     {
                         MoveCommit(md);
@@ -371,7 +370,7 @@ namespace cachCore.models
                     return err;
                 }
 
-                IList<Piece> pieces = GetMoveInputPieces(pieceColor, md);
+                IList<Piece> pieces = GetMoveInputPieces(md);
                 if (pieces == null || pieces.Count == 0)
                 {
                     // no such piece
@@ -410,7 +409,7 @@ namespace cachCore.models
 
                 // if we reach here, then there is a potential piece that can be moved
                 // so attempt the move and check for Check of this color, if in Check, then move is invalid
-                bool pieceKilled = MoveBegin(pieceToMove, md.TargetPosition);
+                bool pieceKilled = MoveBegin(pieceToMove, md);
 
                 // piece must get killed for kill spec in move input - or else its an invalid move spec
                 if (md.IsKill && !pieceKilled)
@@ -593,10 +592,38 @@ namespace cachCore.models
             ItemColor pieceColor = pieces[0].PieceColor;
             PieceType pieceType = pieces[0].PieceType;
             _pieceMap[pieceColor][pieceType] = pieces;
+
+            // add to full list tracking
+            _allMaterial[pieceColor].AddRange(pieces);
+        }
+
+        private void AddToPieceMap(Piece piece)
+        {
+            ItemColor pieceColor = piece.PieceColor;
+            PieceType pieceType = piece.PieceType;
+            _pieceMap[pieceColor][pieceType].Add(piece);
+
+            // add to full list tracking
+            _allMaterial[pieceColor].Add(piece);
+        }
+
+        private void RemoveFromPieceMap(Piece piece)
+        {
+            ItemColor pieceColor = piece.PieceColor;
+            PieceType pieceType = piece.PieceType;
+            _pieceMap[pieceColor][pieceType].Remove(piece);
+
+            // remove from full list tracking
+            _allMaterial[pieceColor].Remove(piece);
         }
 
         private void CreatePieceMap(bool initLists)
         {
+            // create map for all pieces
+            _allMaterial = new Dictionary<ItemColor, List<Piece>>();
+            _allMaterial[ItemColor.Black] = new List<Piece>();
+            _allMaterial[ItemColor.White] = new List<Piece>();
+
             // create Piece Map and optionally initialize the lists too
             if (initLists)
             {
@@ -638,11 +665,11 @@ namespace cachCore.models
             }
         }
 
-        private IList<Piece> GetMoveInputPieces(ItemColor pieceColor, MoveDescriptor md)
+        private IList<Piece> GetMoveInputPieces(MoveDescriptor md)
         {
             IList<Piece> mipPieces;
 
-            IList<Piece> pieces = GetPieces(pieceColor, md.PieceType);
+            IList<Piece> pieces = GetPieces(md.PieceColor, md.PieceType);
             if (md.IsStartPositionInfoAvailable)
             {
                 mipPieces = pieces.Where(p =>
@@ -657,7 +684,7 @@ namespace cachCore.models
             return mipPieces;
         }
 
-        private MoveErrorType MoveCastle(ItemColor pieceColor, MoveDescriptor md)
+        private MoveErrorType MoveCastle(MoveDescriptor md)
         {
             MoveErrorType result;
 
@@ -666,7 +693,7 @@ namespace cachCore.models
                 throw new CachException("MoveCastle: move descriptor does not specify a castling move");
             }
 
-            var cavHelper = new CastleAttemptValidationHelper(this, pieceColor, md.IsKingSideCastle);
+            var cavHelper = new CastleAttemptValidationHelper(this, md.PieceColor, md.IsKingSideCastle);
             if (cavHelper.CanCastle)
             {
                 // push current into board history
@@ -687,8 +714,10 @@ namespace cachCore.models
             return result;
         }
 
-        private bool MoveBegin(Piece piece, Position target)
+        private bool MoveBegin(Piece piece, MoveDescriptor md)
         {
+            Position target = md.TargetPosition;
+
             bool pieceKilled = false;
             BoardSquare square = this[target];
 
@@ -738,12 +767,54 @@ namespace cachCore.models
                 pieceKilled = true;
             }
 
-            // record piece current pos
-            _boardHistory.PushPosition(piece);
-            mMove(piece, target);
+            if (md.IsPromotion)
+            {
+                // create new piece
+                Piece promotedPiece = CreatePromotedPiece(piece.PieceColor, md.PromotedPieceType, target);
+
+                _boardHistory.PushPromotion(piece, promotedPiece);
+                mPromote(piece, promotedPiece, target);
+            }
+            else
+            {
+                // record piece current pos
+                _boardHistory.PushPosition(piece);
+                mMove(piece, target);
+            }
 
             return pieceKilled;
         }
+
+        private Piece CreatePromotedPiece(ItemColor pieceColor, PieceType pieceType, Position position)
+        {
+            Piece piece = null;
+
+            switch (pieceType)
+            {
+                case PieceType.Queen:
+                    piece = new Queen(pieceColor, position);
+                    break;
+
+                case PieceType.Rook:
+                    piece = new Rook(pieceColor, position);
+                    break;
+
+                case PieceType.Bishop:
+                    piece = new Bishop(pieceColor, position);
+                    break;
+
+                case PieceType.Knight:
+                    piece = new Knight(pieceColor, position);
+                    break;
+
+                default:
+                    // no other option makes sense for promoted piece type
+                    throw new CachException($"Invalid promotion piece type: {pieceType.ToString()}");
+            }
+
+            return piece;
+        }
+
 
         /// <summary>
         /// Checks the current intentended move and if pawn moving two steps, sets the current
@@ -771,26 +842,24 @@ namespace cachCore.models
                 }
 
                 _enPassant = new Position(row, startPosition.Column);
+                // TODO: save enPassant setting into board history
+
                 set = true;
             }
 
             if (!set)
             {
+                // TODO: if enPassant set currently, save unsetting of enPassant into board history
+
                 // clear en passant due to this last move
                 _enPassant = Position.Invalid;
             }
         }
 
-        private void MovePromoteBegin(Piece pieceOriginal, Piece piecePromoted, Position target)
-        {
-            // TODO: implement MoveBegin with promotion support
-        }
-
-        private void MoveCommit(MoveDescriptor md, Piece movingPiece = null, Piece piecePromoted = null)
+        private void MoveCommit(MoveDescriptor md, Piece movingPiece = null)
         {
             // TODO:
             // record move into Move History
-            // if piecePromoted is not null, add to piece map
 
             // check and set en passant
             if (movingPiece != null)
@@ -823,6 +892,42 @@ namespace cachCore.models
             this[target].SetPiece(piece);
         }
 
+        private void mPromote(Piece originalPiece, Piece promotedPiece, Position target)
+        {
+            // promote original piece
+            originalPiece.Promote(promotedPiece);
+
+            // remove piece from previous square
+            this[originalPiece.Position].RemovePiece();
+
+            // move piece to new pos
+            // promotedPiece.MoveTo(target);
+
+            // set promoted piece in current square
+            this[target].SetPiece(promotedPiece);
+
+            // add new piece into tracking maps
+            AddToPieceMap(promotedPiece);
+        }
+
+        private void mUnPromote(Piece originalPiece, Piece promotedPiece)
+        {
+            // unpromote original piece
+            originalPiece.UnPromote();
+
+            // set original piece back in its square
+            this[originalPiece.Position].SetPiece(originalPiece);
+
+            // remove promoted piece from board
+            this[promotedPiece.Position].RemovePiece();
+
+            // remove new piece from tracking maps
+            RemoveFromPieceMap(promotedPiece);
+
+            // forget promoted piece
+            Piece.Remove(promotedPiece.Id);
+        }
+
         private void mKill(Piece piece)
         {
             piece.Kill();
@@ -832,7 +937,7 @@ namespace cachCore.models
             activePieces.Remove(piece);
 
             // move into gobbled material
-            _killedMaterial[piece.PieceColor].Add(piece);
+            //_killedMaterial[piece.PieceColor].Add(piece);
         }
 
         private void mUnkill(Piece piece)
@@ -840,7 +945,7 @@ namespace cachCore.models
             piece.Unkill();
 
             // remove from gobbled material
-            _killedMaterial[piece.PieceColor].Remove(piece);
+            //_killedMaterial[piece.PieceColor].Remove(piece);
 
             // add to active piece map
             IList<Piece> activePieces = GetPieces(piece.PieceColor, piece.PieceType);
@@ -875,7 +980,11 @@ namespace cachCore.models
                     break;
 
                 case BoardHistoryType.PiecePromotion:
-                    // TODO:
+                    // unpromote
+                    PiecePromotionHistoryItem pmhi = hi as PiecePromotionHistoryItem;
+                    Piece origPiece = Piece.Get(pmhi.PieceIdOriginal);
+                    Piece promPiece = Piece.Get(pmhi.PieceIdPromoted);
+                    mUnPromote(origPiece, promPiece);
                     break;
             }
         }
