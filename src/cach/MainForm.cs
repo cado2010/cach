@@ -76,7 +76,7 @@ namespace cach
                     if (_game.Board.IsGameOver)
                     {
                         if (_game.Board.IsCheckMate)
-                            labelGameStatus.Text = $"Check Mate [{_game.Board.Winner.ToString()} wins";
+                            labelGameStatus.Text = $"Check Mate [{_game.Board.Winner.ToString()}] wins!!";
                         else if (_game.Board.IsStaleMate)
                             labelGameStatus.Text = "Stale Mate";
                         else
@@ -86,16 +86,21 @@ namespace cach
                     {
                         labelGameStatus.Text = $"{_game.Board.PlayerInCheck.ToString()} in Check!";
                     }
+                    else
+                    {
+                        labelGameStatus.Text = "";
+                    }
                 }
 
                 _forceViewSet = false;
+                textBoxMove.Text = "";
                 Invalidate();
             }
         }
 
         private bool _forceViewSet = false;
         private ItemColor _forceViewColor;
-        private ItemColor _alwaysShowColor;
+        private ItemColor _alwaysShowColor = ItemColor.White;
 
         private void buttonWhiteView_Click(object sender, EventArgs e)
         {
@@ -115,6 +120,26 @@ namespace cach
         {
             _alwaysShowColor = _forceViewSet ? _forceViewColor : _game.ToPlay;
             Invalidate();
+        }
+
+        private void buttonCreateBoard_Click(object sender, EventArgs e)
+        {
+            if (textBoxMove.Text.Trim() != "" &&
+                MessageBox.Show(this, "Current board will be lost! Continue?", "Warning",
+                MessageBoxButtons.OKCancel, MessageBoxIcon.Asterisk) == DialogResult.OK)
+            {
+                try
+                {
+                    _game = new GameController().CreateGame(textBoxMove.Text.Trim());
+                    textBoxMove.Text = "";
+
+                    Invalidate();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error while creating board from FEN: {ex.Message}");
+                }
+            }
         }
     }
 }

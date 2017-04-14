@@ -203,28 +203,30 @@ namespace cachCore.models
         /// <param name="path"></param>
         public static Board ReadFromFile(string path)
         {
-            try
-            {
-                string jsonString = File.ReadAllText(path);
-                var b = JsonConvert.DeserializeObject<Board>(jsonString,
-                    new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto });
+            throw new NotImplementedException();
 
-                // repopulate active pieces
-                // TODO: this is wrong
-                // b.RebuildPieceMap();
+            //try
+            //{
+            //    string jsonString = File.ReadAllText(path);
+            //    var b = JsonConvert.DeserializeObject<Board>(jsonString,
+            //        new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto });
 
-                // TODO:
-                // (1) reset board pieces from all material
-                // (2) build active piece map from board
+            //    // repopulate active pieces
+            //    // TODO: this is wrong
+            //    // b.RebuildPieceMap();
 
-                return b;
-            }
-            catch(Exception ex)
-            {
-                _staticLogger.Error("ReadFromFile: exception: " + ex.Message, ex);
-            }
+            //    // TODO:
+            //    // (1) reset board pieces by looking up all material
+            //    // (2) build active piece map from board
 
-            return null;
+            //    return b;
+            //}
+            //catch(Exception ex)
+            //{
+            //    _staticLogger.Error("ReadFromFile: exception: " + ex.Message, ex);
+            //}
+
+            //return null;
         }
 
         /// <summary>
@@ -327,6 +329,11 @@ namespace cachCore.models
         /// <returns></returns>
         public MoveErrorType Move(ItemColor pieceColor, string move)
         {
+            if (IsGameOver)
+            {
+                return MoveErrorType.GameOver;
+            }
+
             try
             {
                 MoveDescriptor md = null;

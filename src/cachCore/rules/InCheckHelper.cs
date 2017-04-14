@@ -74,16 +74,7 @@ namespace cachCore.rules
                 return true;
             }
 
-            // create a temporary Knight at the King position to check attack from an enemy Knight
-            Knight knight = new Knight(_enemyColor, _kingPosition, isTemp: true);
-
-            Movement m = knight.GetMovement();
-            if (CheckPathForEnemyPieceType(PieceType.Knight, m.Paths))
-            {
-                return true;
-            }
-
-            // finally, check attack from Pawns
+            // check attack from Pawns
             if (_pieceColor == ItemColor.White)
             {
                 Position p0 = _kingPosition.LeftUp;
@@ -113,6 +104,22 @@ namespace cachCore.rules
                     Attacker = _board[p1].Piece;
                     return true;
                 }
+            }
+
+            // create a temporary Knight at the King position to check attack from an enemy Knight
+            Knight knight = new Knight(_enemyColor, _kingPosition, isTemp: true);
+            Movement m = knight.GetMovement();
+            if (CheckPathForEnemyPieceType(PieceType.Knight, m.Paths))
+            {
+                return true;
+            }
+
+            // finally check for attack from opponent King
+            King king = new King(_enemyColor, _kingPosition, isTemp: true);
+            m = king.GetMovement();
+            if (CheckPathForEnemyPieceType(PieceType.King, m.Paths))
+            {
+                return true;
             }
 
             return false;

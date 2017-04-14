@@ -138,5 +138,13 @@ namespace cachCoreTests
             Assert.AreEqual(board.Move(ItemColor.Black, "d5"), MoveErrorType.Ok);
             Assert.AreEqual(board.Move(ItemColor.White, "cxd6"), MoveErrorType.Ok);
         }
+
+        [Test]
+        [TestCase(ItemColor.White, "Kb1")]
+        public void king_moves_should_fail(ItemColor pieceColor, string move)
+        {
+            Board board = FENSerializer.BoardFromFEN("8/7P/8/8/8/8/7R/k1K5 w - -");
+            Assert.AreNotEqual(board.Move(pieceColor, move), MoveErrorType.Ok);
+        }
     }
 }

@@ -11,6 +11,7 @@
         NoPieceInRange,
         KingInCheck,
         InvalidKill,
-        InvalidCastle
+        InvalidCastle,
+        GameOver
     }
 }

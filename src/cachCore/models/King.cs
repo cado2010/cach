@@ -5,8 +5,8 @@ namespace cachCore.models
 {
     public class King : Piece
     {
-        public King(ItemColor pieceColor, Position position) :
-            base(PieceType.King, pieceColor, position)
+        public King(ItemColor pieceColor, Position position, bool isTemp = false) :
+            base(PieceType.King, pieceColor, position, isTemp)
         {
         }
 

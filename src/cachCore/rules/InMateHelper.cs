@@ -84,22 +84,20 @@ namespace cachCore.rules
                         return;
                     }
                 }
-                else
+
+                // check if King can move
+                Movement m = _board.GetMovement(king);
+                foreach (var path in m.Paths)
                 {
-                    // check if King can move
-                    Movement m = _board.GetMovement(king);
-                    foreach (var path in m.Paths)
+                    foreach (var pos in path)
                     {
-                        foreach (var pos in path)
+                        // if pos is not in Check, then can safely move there
+                        var ch2 = new InCheckHelper(_board, _pieceColor, pos);
+                        if (!ch2.IsInCheck)
                         {
-                            // if pos is not in Check, then can safely move there
-                            var ch2 = new InCheckHelper(_board, _pieceColor, pos);
-                            if (!ch2.IsInCheck)
-                            {
-                                // King can move to safety
-                                Reason = "King can move to safety";
-                                return;
-                            }
+                            // King can move to safety
+                            Reason = "King can move to safety";
+                            return;
                         }
                     }
                 }

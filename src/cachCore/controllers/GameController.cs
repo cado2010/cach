@@ -1,5 +1,6 @@
 ﻿using log4net;
 using cachCore.models;
+using cachCore.utils;
 
 namespace cachCore.controllers
 {
@@ -15,6 +16,13 @@ namespace cachCore.controllers
         public Game CreateGame()
         {
             Board board = new Board();
+            Game game = new Game(board);
+            return game;
+        }
+
+        public Game CreateGame(string fen)
+        {
+            Board board = FENSerializer.BoardFromFEN(fen);
             Game game = new Game(board);
             return game;
         }
