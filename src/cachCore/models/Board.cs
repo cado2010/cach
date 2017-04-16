@@ -887,7 +887,12 @@ namespace cachCore.models
             }
         }
 
-        private void mMove(Piece piece, Position target)
+        /// <summary>
+        /// This is public only for InMateHelper use
+        /// </summary>
+        /// <param name="piece"></param>
+        /// <param name="target"></param>
+        public void mMove(Piece piece, Position target)
         {
             // remove piece from previous square
             this[piece.Position].RemovePiece();

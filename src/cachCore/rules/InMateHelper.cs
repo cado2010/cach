@@ -68,7 +68,7 @@ namespace cachCore.rules
         /// 1. King in Check
         /// 2. attacking piece cannot be killed
         /// 3. King cannot move to safety
-        /// 4. None of own army can move to block in the path of the immediate attacker
+        /// 4. None of own army can move to block in the path of the immediate attacker without endangering the King
         /// </summary>
         /// <param name="icHelper"></param>
         /// <param name="king"></param>
@@ -152,12 +152,17 @@ namespace cachCore.rules
                     {
                         if (_board.IsWithinPieceRange(piece, ap))
                         {
-                            // attack path blocked by own army
-                            Reason = "Attack path can be blocked by own Army";
-                            OwnArmyBlocker = piece;
-                            BlockPosition = ap;
+                            // need to perform one last check of whether moving this piece will endanger the King
+                            // once more
+                            if (!KingInCheckAfterMove(piece, ap, king.Position))
+                            {
+                                // attack path blocked by own army
+                                Reason = "Attack path can be blocked by own Army";
+                                OwnArmyBlocker = piece;
+                                BlockPosition = ap;
 
-                            return;
+                                return;
+                            }
                         }
                     }
                 }
@@ -165,6 +170,24 @@ namespace cachCore.rules
 
             // is Check Mate
             IsCheckMate = true;
+        }
+
+        private bool KingInCheckAfterMove(Piece blockAttemptPiece, Position blockAttemptPosition,
+            Position kingPosition)
+        {
+            bool result = false;
+
+            // remember piece current pos
+            Position origPos = blockAttemptPiece.Position;
+
+            // attempt the move and check for danger
+            _board.mMove(blockAttemptPiece, blockAttemptPosition);
+            result = new InCheckHelper(_board, _pieceColor, kingPosition).IsInCheck;
+
+            // after the computation, move the piece back to where it was before
+            _board.mMove(blockAttemptPiece, origPos);
+
+            return result;
         }
     }
 }
