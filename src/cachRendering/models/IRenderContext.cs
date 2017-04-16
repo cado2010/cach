@@ -9,6 +9,7 @@ namespace cachRendering.models
         Board Board { get; set; }
         ItemColor ToPlay { get; set; }
         int TileSize { get; set; }
+        int BorderSize { get; set; }
         Point LeftUpperOffset { get; set; }
     }
 }

@@ -52,7 +52,7 @@ namespace cachCore.rules
             KingPositionAfterCastle = Position.Invalid;
             RookPositionAfterCastle = Position.Invalid;
 
-            King king = _board.GetPieces(_pieceColor, PieceType.King)[0] as King;
+            King king = _board.GetActivePieces(_pieceColor, PieceType.King)[0] as King;
 
             // 1.
             if (king.HasMoved)

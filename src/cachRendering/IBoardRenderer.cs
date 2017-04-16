@@ -1,11 +1,11 @@
-﻿using System.Drawing;
-using cachRendering.models;
+﻿using cachRendering.models;
+using System.IO;
 
 namespace cachRendering
 {
     public interface IBoardRenderer
     {
         void Render(IRenderContext renderContext);
-        Image RenderAsImage(IRenderContext renderContext);
+        bool RenderAsImage(IRenderContext renderContext, MemoryStream memStream);
     }
 }

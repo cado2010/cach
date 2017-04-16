@@ -12,3 +12,5 @@
 /src/packages
 /src/cachRendering/bin
 /src/cachRendering/obj
+/src/cachBot/bin
+/src/cachBot/obj

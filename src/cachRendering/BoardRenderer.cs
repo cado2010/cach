@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
+using System.Drawing.Imaging;
 using cachCore.enums;
 using cachCore.models;
 using cachRendering.models;
@@ -10,7 +12,6 @@ namespace cachRendering
     public class BoardRenderer : IBoardRenderer
     {
         private const int GridSize = 8;
-        private const int BorderSize = 20;
 
         private static Dictionary<ItemColor, Dictionary<PieceType, Image>> _pieceImageMap;
 
@@ -49,18 +50,45 @@ namespace cachRendering
         {
         }
 
-        public Image RenderAsImage(IRenderContext renderContext)
+        public bool RenderAsImage(IRenderContext renderContext, MemoryStream memStream)
         {
-            throw new NotImplementedException();
+            try
+            {
+                int imgSize = GridSize * renderContext.TileSize + renderContext.BorderSize * 2;
+                using (var bmp = new Bitmap(imgSize, imgSize))
+                {
+                    using (Graphics g = Graphics.FromImage(bmp))
+                    {
+                        g.FillRectangle(Brushes.LightGray, 0, 0, imgSize, imgSize);
+
+                        Render(g, renderContext.Board, renderContext.ToPlay,
+                            renderContext.LeftUpperOffset,
+                            renderContext.TileSize, renderContext.BorderSize);
+                    }
+
+                    memStream.Seek(0, SeekOrigin.Begin);
+                    bmp.Save(memStream, ImageFormat.Png);
+                    memStream.Seek(0, SeekOrigin.Begin);
+                    // Image im = Image.FromStream(memStream);
+                    // im.Save(@"e:\tmp\cach\test.png");
+
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.StackTrace);
+                return false;
+            }
         }
 
         public void Render(IRenderContext renderContext)
         {
             GraphicsRenderContext grc = renderContext as GraphicsRenderContext;
-            Render(grc.Graphics, grc.Board, grc.ToPlay, grc.LeftUpperOffset, grc.TileSize);
+            Render(grc.Graphics, grc.Board, grc.ToPlay, grc.LeftUpperOffset, grc.TileSize, grc.BorderSize);
         }
 
-        private void PaintBoard(Graphics g, ItemColor toPlay, Point luOffset, int tileSize)
+        private void PaintBoard(Graphics g, ItemColor toPlay, Point luOffset, int tileSize, int borderSize)
         {
             Brush brush;
 
@@ -72,7 +100,7 @@ namespace cachRendering
                     // create new Panel control which will be one 
                     // chess board tile
                     Size sz = new Size(tileSize, tileSize);
-                    Point loc = new Point(tileSize * row + luOffset.X + BorderSize, tileSize * col + luOffset.Y + BorderSize);
+                    Point loc = new Point(tileSize * row + luOffset.X + borderSize, tileSize * col + luOffset.Y + borderSize);
 
                     // color the backgrounds
                     if (row % 2 == 0)
@@ -84,36 +112,45 @@ namespace cachRendering
                 }
             }
 
-            for (int col = 0; col < 8; col++)
-            {
-                PointF loc = new Point(tileSize * col + 35 + luOffset.X + BorderSize, tileSize * 8 + 2 + luOffset.Y + BorderSize);
-                int c = toPlay == ItemColor.White ? (97 + col) : (97 + 7 - col);
-                g.DrawString(Convert.ToChar(c).ToString(), SystemFonts.DefaultFont, Brushes.Black, loc);
+            Font font = SystemFonts.DefaultFont;
 
-                loc = new Point(tileSize * col + 35 + luOffset.X + BorderSize, luOffset.Y + BorderSize - 16);
-                g.DrawString(Convert.ToChar(c).ToString(), SystemFonts.DefaultFont, Brushes.Black, loc);
+            int xOff = tileSize / 2 - 4;
+            for (int col = 0; col < GridSize; col++)
+            {
+                PointF loc = new Point(tileSize * col + xOff + luOffset.X + borderSize,
+                    tileSize * GridSize + 2 + luOffset.Y + borderSize);
+                int c = toPlay == ItemColor.White ? (97 + col) : (97 + 7 - col);
+                g.DrawString(Convert.ToChar(c).ToString(), font, Brushes.Black, loc);
+
+                loc = new Point(tileSize * col + xOff + luOffset.X + borderSize, luOffset.Y + borderSize - 16);
+                g.DrawString(Convert.ToChar(c).ToString(), font, Brushes.Black, loc);
             }
 
-            for (int row = 0; row < 8; row++)
+            int yOff = tileSize / 2 - font.Height / 2;
+            for (int row = 0; row < GridSize; row++)
             {
-                PointF loc = new Point(tileSize * 8 + 2 + luOffset.X + BorderSize, tileSize * row + 34 + luOffset.Y + BorderSize);
+                PointF loc = new Point(tileSize * GridSize + 2 + luOffset.X + borderSize,
+                    tileSize * row + yOff + luOffset.Y + borderSize);
                 int c = toPlay == ItemColor.White ? (49 + 7 - row) : (49 + row);
-                g.DrawString(Convert.ToChar(c).ToString(), SystemFonts.DefaultFont, Brushes.Black, loc);
+                g.DrawString(Convert.ToChar(c).ToString(), font, Brushes.Black, loc);
 
-                loc = new Point(luOffset.X + BorderSize - 14, tileSize * row + 34 + luOffset.Y + BorderSize);
-                g.DrawString(Convert.ToChar(c).ToString(), SystemFonts.DefaultFont, Brushes.Black, loc);
+                loc = new Point(luOffset.X + borderSize - 12, tileSize * row + yOff + luOffset.Y + borderSize);
+                g.DrawString(Convert.ToChar(c).ToString(), font, Brushes.Black, loc);
             }
         }
 
-        private void Render(Graphics g, Board board, ItemColor toPlay, Point luOffset, int tileSize)
+        private void Render(Graphics g, Board board, ItemColor toPlay, Point luOffset, int tileSize, int borderSize)
         {
             // render board
-            PaintBoard(g, toPlay, luOffset, tileSize);
+            PaintBoard(g, toPlay, luOffset, tileSize, borderSize);
 
             // render pieces
-            for (int row = 0; row < 8; row++)
+            float imgPerc = 0.96f;
+            float imgSide = tileSize * imgPerc;
+            float imgOff = tileSize * ((1 - imgPerc) / 2.0f);
+            for (int row = 0; row < GridSize; row++)
             {
-                for (int col = 0; col < 8; col++)
+                for (int col = 0; col < GridSize; col++)
                 {
                     int r = toPlay == ItemColor.White ? (7 - row) : row;
                     int c = toPlay == ItemColor.White ? col : (7 - col);
@@ -124,7 +161,10 @@ namespace cachRendering
                         ItemColor pieceColor = square.Piece.PieceColor;
                         PieceType pieceType = square.Piece.PieceType;
                         Image pieceImage = _pieceImageMap[pieceColor][pieceType];
-                        Point loc = new Point(tileSize * col + 8 + luOffset.X + BorderSize, tileSize * row + 8 + luOffset.Y + BorderSize);
+                        RectangleF loc = new RectangleF(
+                            new PointF(tileSize * col + imgOff + luOffset.X + borderSize,
+                                tileSize * row + imgOff + luOffset.Y + borderSize),
+                            new SizeF(imgSide, imgSide));
 
                         g.DrawImage(pieceImage, loc);
                     }

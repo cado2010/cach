@@ -1,6 +1,7 @@
 ﻿using System.Drawing;
 using cachCore.models;
 using cachCore.enums;
+using System;
 
 namespace cachRendering.models
 {
@@ -13,6 +14,8 @@ namespace cachRendering.models
         public Point LeftUpperOffset { get; set; }
 
         public int TileSize { get; set; }
+
+        public int BorderSize { get; set; }
 
         public Graphics Graphics { get; set; }
     }

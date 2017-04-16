@@ -136,7 +136,7 @@ namespace cachCore.models
         public bool IsInCheck(ItemColor pieceColor)
         {
             // see if King of given color can be attacked
-            King king = GetPieces(pieceColor, PieceType.King)[0] as King;
+            King king = GetActivePieces(pieceColor, PieceType.King)[0] as King;
 
             InCheckHelper helper = new InCheckHelper(this, pieceColor, king.Position);
             return helper.IsInCheck;
@@ -158,7 +158,7 @@ namespace cachCore.models
         /// <param name="pieceColor"></param>
         /// <param name="pieceType"></param>
         /// <returns></returns>
-        public IList<Piece> GetPieces(ItemColor pieceColor, PieceType pieceType)
+        public IList<Piece> GetActivePieces(ItemColor pieceColor, PieceType pieceType)
         {
             return _pieceMap[pieceColor][pieceType];
         }
@@ -676,7 +676,7 @@ namespace cachCore.models
         {
             IList<Piece> mipPieces;
 
-            IList<Piece> pieces = GetPieces(md.PieceColor, md.PieceType);
+            IList<Piece> pieces = GetActivePieces(md.PieceColor, md.PieceType);
             if (md.IsStartPositionInfoAvailable)
             {
                 mipPieces = pieces.Where(p =>
@@ -940,7 +940,7 @@ namespace cachCore.models
             piece.Kill();
 
             // remove from active piece map
-            IList<Piece> activePieces = GetPieces(piece.PieceColor, piece.PieceType);
+            IList<Piece> activePieces = GetActivePieces(piece.PieceColor, piece.PieceType);
             activePieces.Remove(piece);
 
             // move into gobbled material
@@ -955,7 +955,7 @@ namespace cachCore.models
             //_killedMaterial[piece.PieceColor].Remove(piece);
 
             // add to active piece map
-            IList<Piece> activePieces = GetPieces(piece.PieceColor, piece.PieceType);
+            IList<Piece> activePieces = GetActivePieces(piece.PieceColor, piece.PieceType);
             activePieces.Add(piece);
 
             // set unkilled piece back into BoardSquare

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
+using System.IO;
 using cachCore.models;
 using cachCore.enums;
 using cachCore.controllers;
@@ -46,9 +47,17 @@ namespace cach
                 Graphics = g,
                 LeftUpperOffset = new Point(0, 0),
                 TileSize = Resource1.bK.Size.Width + 20,
+                BorderSize = 20,
                 ToPlay = toPlay
             };
             _boardRenderer.Render(grc);
+
+            grc.Graphics = null;
+            grc.TileSize = 30;
+            grc.BorderSize = 16;
+
+            MemoryStream memStream = new MemoryStream();
+            _boardRenderer.RenderAsImage(grc, memStream);
         }
 
         private void MainForm_Paint(object sender, PaintEventArgs e)

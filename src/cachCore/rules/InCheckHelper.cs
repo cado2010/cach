@@ -30,13 +30,15 @@ namespace cachCore.rules
         /// <param name="board"></param>
         /// <param name="pieceColor"></param>
         public InCheckHelper(Board board, ItemColor pieceColor) :
-            this(board, pieceColor, (board.GetPieces(pieceColor, PieceType.King)[0] as King).Position)
+            this(board, pieceColor, (board.GetActivePieces(pieceColor, PieceType.King)[0] as King).Position)
         {
         }
 
         public bool IsInCheck { get; private set; }
 
         public Piece Attacker { get; private set; }
+
+        public IList<Position> AttackPath { get; private set; }
 
         /// <summary>
         /// Computes if the King of the given PieceColor is in Check - can be optimized by analyzing individual
@@ -154,11 +156,33 @@ namespace cachCore.rules
                         if (p.PieceType == pieceType)
                         {
                             Attacker = p;
+
+                            // attack path is meaningful only for certain attackers
+                            if (p.PieceType == PieceType.Queen ||
+                                p.PieceType == PieceType.Rook ||
+                                p.PieceType == PieceType.Bishop)
+                            {
+                                // attack path is current path without current position
+                                AttackPath = new List<Position>();
+                                foreach (var ap in path)
+                                {
+                                    if (ap.IsSame(pos))
+                                    {
+                                        break;
+                                    }
+                                    AttackPath.Add(ap);
+                                }
+                            }
+                            else
+                            {
+                                AttackPath = null;
+                            }
+
                             return true;
                         }
                         else
                         {
-                            // some enemy piece not match piece of search type
+                            // enemy piece does not match piece of search type
                             // so abandon this path for further tests
                             break;
                         }
