@@ -60,6 +60,7 @@
     <Compile Include="models\BoardHistoryItem.cs" />
     <Compile Include="models\BoardHistory.cs" />
     <Compile Include="models\BoardSquare.cs" />
+    <Compile Include="models\BoardStatus.cs" />
     <Compile Include="models\Game.cs" />
     <Compile Include="models\MoveDescriptor.cs" />
     <Compile Include="utils\BoardUtils.cs" />

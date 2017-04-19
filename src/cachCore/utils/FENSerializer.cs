@@ -61,6 +61,9 @@ namespace cachCore.utils
             // recreate active piece map from current Board
             board.RebuildPieceMapFromBoard();
 
+            // update game status
+            board.CheckGameStatus();
+
             return board;
         }
 

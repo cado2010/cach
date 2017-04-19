@@ -34,6 +34,8 @@ namespace cachCore.rules
 
         public Position BlockPosition { get; private set; }
 
+        public Piece CanMovePiece { get; private set;  }
+
         /// <summary>
         /// If not in Check Mate, reason
         /// If not in Slate Mate, reason
@@ -44,7 +46,7 @@ namespace cachCore.rules
         {
             IsCheckMate = IsStaleMate = false;
             SafePosition = Position.Invalid;
-            OwnArmyKiller = OwnArmyBlocker = null;
+            OwnArmyKiller = OwnArmyBlocker = CanMovePiece = null;
 
             King king = _board.GetActivePieces(_pieceColor, PieceType.King)[0] as King;
 
@@ -55,11 +57,7 @@ namespace cachCore.rules
             }
             else
             {
-                // TODO:
-                // Stale Mate:
-                // 1. King NOT in Check
-                // 2. No other Piece exists or can move
-                // 3. King cannot move to any position not in Check
+                ComputeStaleMate(checkHelper, king);
             }
         }
 
@@ -188,6 +186,62 @@ namespace cachCore.rules
             _board.mMove(blockAttemptPiece, origPos);
 
             return result;
+        }
+
+        /// <summary>
+        /// Stale Mate rules:
+        /// 1. King NOT in Check
+        /// 2. King cannot move to any position not in Check
+        /// 3. No other Piece exists or can move
+        /// </summary>
+        private void ComputeStaleMate(InCheckHelper icHelper, King king)
+        {
+            // 1. is already true
+
+            // 2. check if King can move
+            Movement m = _board.GetMovement(king);
+            foreach (var path in m.Paths)
+            {
+                foreach (var pos in path)
+                {
+                    // if pos is not in Check, then can safely move there
+                    var ch2 = new InCheckHelper(_board, _pieceColor, pos);
+                    if (!ch2.IsInCheck)
+                    {
+                        // King can move to safety
+                        Reason = "King can move to a safe position";
+                        SafePosition = pos;
+
+                        return;
+                    }
+                }
+            }
+
+            // 3. if any piece other than King can move
+            IList<Piece> army = _board.GetAllActivePieces(_pieceColor);
+            foreach (var piece in army)
+            {
+                if (piece.PieceType == PieceType.King)
+                {
+                    continue;
+                }
+
+                m = _board.GetMovement(piece);
+                foreach (var path in m.Paths)
+                {
+                    if (path.Count > 0)
+                    {
+                        // some piece can move
+                        Reason = "Some other piece can move";
+                        CanMovePiece = piece;
+
+                        return;
+                    }
+                }
+            }
+
+            // is Stale Mate
+            IsStaleMate = true;
         }
     }
 }

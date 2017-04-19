@@ -142,7 +142,7 @@ namespace cachBot
                 {
                     var fts = new FileToSend("test", fileStream);
 
-                    // await Bot.SendPhotoAsync(message.Chat.Id, fts, "", false, 0, new ReplyKeyboardMarkup(new[] { new KeyboardButton("reply") }, true));
+                     await Bot.SendPhotoAsync(message.Chat.Id, fts, "", false, 0, new ReplyKeyboardMarkup(new[] { new KeyboardButton("reply") }, true));
                     await Bot.SendPhotoAsync(message.Chat.Id, fts, "White to move");
                     // await Bot.SendTextMessage(message.Chat.Id, "hello");
                 }

@@ -10,6 +10,8 @@ namespace cachCore.utils
     {
         public ItemColor PieceColor { get; set; }
 
+        public string Move { get; set; }
+
         /// <summary>
         /// Piece Type specified by this move, must be available
         /// </summary>
@@ -37,6 +39,11 @@ namespace cachCore.utils
         public bool IsDrawOffer { get; set; }
 
         /// <summary>
+        /// Resigns
+        /// </summary>
+        public bool IsResign { get; set; }
+
+        /// <summary>
         /// If this move specified a promotion of pawn reaching Rank 1 or 8
         /// </summary>
         public bool IsPromotion { get; set; }
@@ -53,7 +60,8 @@ namespace cachCore.utils
 
         public bool IsValid
         {
-            get { return PieceType != PieceType.Unknown && (TargetPosition.IsValid || IsCastle); }
+            get { return IsDrawOffer || IsResign ||
+                    (PieceType != PieceType.Unknown && (TargetPosition.IsValid || IsCastle)); }
         }
 
         /// <summary>

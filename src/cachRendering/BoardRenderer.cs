@@ -145,7 +145,7 @@ namespace cachRendering
             PaintBoard(g, toPlay, luOffset, tileSize, borderSize);
 
             // render pieces
-            float imgPerc = 0.96f;
+            float imgPerc = 1.0f;
             float imgSide = tileSize * imgPerc;
             float imgOff = tileSize * ((1 - imgPerc) / 2.0f);
             for (int row = 0; row < GridSize; row++)

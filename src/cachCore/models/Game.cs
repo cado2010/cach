@@ -1,6 +1,7 @@
 ﻿using System;
 using log4net;
 using cachCore.enums;
+using cachCore.utils;
 
 namespace cachCore.models
 {
@@ -59,6 +60,17 @@ namespace cachCore.models
             {
                 _logger.Error($"Game is over");
             }
+        }
+
+        public bool MoveUndo()
+        {
+            if (_board.MoveUndo())
+            {
+                _toPlay = BoardUtils.GetOtherColor(_toPlay);
+                return true;
+            }
+
+            return false;
         }
     }
 }

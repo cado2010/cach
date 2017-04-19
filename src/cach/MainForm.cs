@@ -81,29 +81,34 @@ namespace cach
                 }
                 else
                 {
-                    labelNextToMove.Text = _game.ToPlay.ToString();
-                    if (_game.Board.IsGameOver)
-                    {
-                        if (_game.Board.IsCheckMate)
-                            labelGameStatus.Text = $"Check Mate [{_game.Board.Winner.ToString()}] wins!!";
-                        else if (_game.Board.IsStaleMate)
-                            labelGameStatus.Text = "Stale Mate";
-                        else
-                            labelGameStatus.Text = "Draw";
-                    }
-                    else if (_game.Board.InCheck)
-                    {
-                        labelGameStatus.Text = $"{_game.Board.PlayerInCheck.ToString()} in Check!";
-                    }
-                    else
-                    {
-                        labelGameStatus.Text = "";
-                    }
+                    UpdateGameStatus();
                 }
 
                 _forceViewSet = false;
                 textBoxMove.Text = "";
                 Invalidate();
+            }
+        }
+
+        private void UpdateGameStatus()
+        {
+            labelNextToMove.Text = _game.ToPlay.ToString();
+            if (_game.Board.IsGameOver)
+            {
+                if (_game.Board.IsCheckMate)
+                    labelGameStatus.Text = $"Check Mate [{_game.Board.Winner.ToString()}] wins!!";
+                else if (_game.Board.IsStaleMate)
+                    labelGameStatus.Text = "Stale Mate";
+                else
+                    labelGameStatus.Text = "Draw";
+            }
+            else if (_game.Board.InCheck)
+            {
+                labelGameStatus.Text = $"{_game.Board.PlayerInCheck.ToString()} in Check!";
+            }
+            else
+            {
+                labelGameStatus.Text = "";
             }
         }
 
@@ -149,6 +154,13 @@ namespace cach
                     MessageBox.Show($"Error while creating board from FEN: {ex.Message}");
                 }
             }
+        }
+
+        private void buttonUndo_Click(object sender, EventArgs e)
+        {
+            _game.MoveUndo();
+            UpdateGameStatus();
+            Invalidate();
         }
     }
 }

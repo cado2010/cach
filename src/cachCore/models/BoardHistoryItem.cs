@@ -6,11 +6,15 @@ namespace cachCore.models
     {
         public string Id { get; private set; }
         public BoardHistoryType Type { get; private set; }
+        public int MoveNumber { get; private set; }
+        public int MoveStepNumber { get; private set; }
 
-        protected BoardHistoryItem(BoardHistoryType type)
+        protected BoardHistoryItem(BoardHistoryType type, int moveNumber, int moveStepNumber)
         {
             Id = System.Guid.NewGuid().ToString();
             Type = type;
+            MoveNumber = moveNumber;
+            MoveStepNumber = moveStepNumber;
         }
     }
 
@@ -21,12 +25,17 @@ namespace cachCore.models
     {
         public string PieceId { get; private set; }
         public Position Position { get; private set; }
+        public BoardStatus BoardStatus { get; private set; }
+        public bool HasMoved { get; private set; }
 
-        public PiecePositionHistoryItem(string pieceId, Position position) :
-            base(BoardHistoryType.PiecePosition)
+        public PiecePositionHistoryItem(int moveNumber, int moveStepNumber,
+            string pieceId, Position position, bool hasMoved, BoardStatus boardStatus) :
+            base(BoardHistoryType.PiecePosition, moveNumber, moveStepNumber)
         {
             PieceId = pieceId;
             Position = position;
+            BoardStatus = boardStatus;
+            HasMoved = hasMoved;
         }
     }
 
@@ -38,8 +47,8 @@ namespace cachCore.models
     {
         public string PieceId { get; private set; }
 
-        public PieceAliveStatusHistoryItem(string pieceId) :
-            base(BoardHistoryType.PieceAliveStatus)
+        public PieceAliveStatusHistoryItem(int moveNumber, int moveStepNumber, string pieceId) :
+            base(BoardHistoryType.PieceAliveStatus, moveNumber, moveStepNumber)
         {
             PieceId = pieceId;
         }
@@ -54,8 +63,8 @@ namespace cachCore.models
 
         public string PieceIdPromoted { get; private set; }
 
-        public PiecePromotionHistoryItem(string pieceIdOriginal, string pieceIdPromoted) :
-            base(BoardHistoryType.PiecePromotion)
+        public PiecePromotionHistoryItem(int moveNumber, int moveStepNumber, string pieceIdOriginal, string pieceIdPromoted) :
+            base(BoardHistoryType.PiecePromotion, moveNumber, moveStepNumber)
         {
             PieceIdOriginal = pieceIdOriginal;
             PieceIdPromoted = pieceIdPromoted;

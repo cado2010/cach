@@ -26,13 +26,16 @@ namespace cachCore.models
         public bool IsDrawOffer { get; private set; }
 
         [JsonProperty]
+        public bool IsResign { get; private set; }
+
+        [JsonProperty]
         public bool InCheck { get; private set; }
 
         [JsonProperty]
         public ItemColor PlayerInCheck { get; private set; }
 
         [JsonIgnore]
-        public bool IsGameOver { get { return IsCheckMate || IsStaleMate || IsDrawOffer; } }
+        public bool IsGameOver { get { return IsCheckMate || IsStaleMate || IsDrawOffer || IsResign; } }
 
         [JsonProperty]
         public ItemColor Winner { get; private set; }
@@ -69,9 +72,6 @@ namespace cachCore.models
         /// </summary>
         [JsonProperty]
         private Position _enPassant;
-
-        [JsonProperty]
-        private int _previousHistoryLevel;
 
         [JsonIgnore]
         private ILog _logger;
@@ -362,6 +362,16 @@ namespace cachCore.models
                     return MoveErrorType.Ok;
                 }
 
+                // handle resign - and shutdown game
+                if (md.IsResign)
+                {
+                    IsResign = true;
+                    Winner = pieceColor == ItemColor.White ? ItemColor.Black : ItemColor.White;
+
+                    _logger.Info($"Move[{pieceColor}]: resigns - game over");
+                    return MoveErrorType.Ok;
+                }
+
                 // handle Castle move as it involves special steps
                 if (md.IsCastle)
                 {
@@ -454,10 +464,25 @@ namespace cachCore.models
             }
         }
 
-        //-------------------------------------------------------------------------------
-        // private impl
+        /// <summary>
+        /// Performs one half (official) move undo - that is, undoes the last color's move
+        /// </summary>
+        public bool MoveUndo()
+        {
+            if (!_boardHistory.IsEmpty)
+            {
+                MoveRevert();
+                CheckGameStatus();
+                return true;
+            }
 
-        private void CheckGameStatus()
+            return false;
+        }
+
+        /// <summary>
+        /// Checks and sets game status flags based on current board position
+        /// </summary>
+        public void CheckGameStatus()
         {
             // either color in Mate
             var imHelper = new InMateHelper(this, ItemColor.Black);
@@ -506,6 +531,9 @@ namespace cachCore.models
                 PlayerInCheck = ItemColor.Black;
             }
         }
+
+        //-------------------------------------------------------------------------------
+        // private impl
 
         /// <summary>
         /// Initializes game board with pieces and positions
@@ -704,8 +732,8 @@ namespace cachCore.models
             if (cavHelper.CanCastle)
             {
                 // push current into board history
-                _boardHistory.PushPosition(cavHelper.Rook);
-                _boardHistory.PushPosition(cavHelper.King);
+                _boardHistory.PushPosition(cavHelper.Rook, GetBoardStatus());
+                _boardHistory.PushPosition(cavHelper.King, null);
 
                 // move the King and Rook into position
                 mMove(cavHelper.King, cavHelper.KingPositionAfterCastle);
@@ -721,6 +749,11 @@ namespace cachCore.models
             return result;
         }
 
+        private BoardStatus GetBoardStatus()
+        {
+            return new BoardStatus() { EnPassant = _enPassant };
+        }
+
         private bool MoveBegin(Piece piece, MoveDescriptor md)
         {
             Position target = md.TargetPosition;
@@ -733,8 +766,6 @@ namespace cachCore.models
             {
                 throw new CachException("Cannot move to square occupied your color: " + piece.PieceColor);
             }
-
-            _previousHistoryLevel = _boardHistory.Level;
 
             Piece previousPiece = null;
             if (square.IsOccupied())
@@ -785,7 +816,7 @@ namespace cachCore.models
             else
             {
                 // record piece current pos
-                _boardHistory.PushPosition(piece);
+                _boardHistory.PushPosition(piece, GetBoardStatus());
                 mMove(piece, target);
             }
 
@@ -849,15 +880,11 @@ namespace cachCore.models
                 }
 
                 _enPassant = new Position(row, startPosition.Column);
-                // TODO: save enPassant setting into board history
-
                 set = true;
             }
 
             if (!set)
             {
-                // TODO: if enPassant set currently, save unsetting of enPassant into board history
-
                 // clear en passant due to this last move
                 _enPassant = Position.Invalid;
             }
@@ -865,8 +892,8 @@ namespace cachCore.models
 
         private void MoveCommit(MoveDescriptor md, Piece movingPiece = null)
         {
-            // TODO:
             // record move into Move History
+            _boardHistory.RecordMove(md.PieceColor, md.Move);
 
             // check and set en passant
             if (movingPiece != null)
@@ -880,8 +907,9 @@ namespace cachCore.models
 
         private void MoveRevert()
         {
-            // pop history until level reaches _previousHistoryLevel and undo each
-            while (_boardHistory.Level != _previousHistoryLevel)
+            // undo changes for one move step worth of changes
+            int moveStepNumber = _boardHistory.PeekMoveStepNumber;
+            while (_boardHistory.PeekMoveStepNumber == moveStepNumber)
             {
                 mRevert();
             }
@@ -947,17 +975,11 @@ namespace cachCore.models
             // remove from active piece map
             IList<Piece> activePieces = GetActivePieces(piece.PieceColor, piece.PieceType);
             activePieces.Remove(piece);
-
-            // move into gobbled material
-            //_killedMaterial[piece.PieceColor].Add(piece);
         }
 
         private void mUnkill(Piece piece)
         {
             piece.Unkill();
-
-            // remove from gobbled material
-            //_killedMaterial[piece.PieceColor].Remove(piece);
 
             // add to active piece map
             IList<Piece> activePieces = GetActivePieces(piece.PieceColor, piece.PieceType);
@@ -989,6 +1011,18 @@ namespace cachCore.models
                     PiecePositionHistoryItem pphi = hi as PiecePositionHistoryItem;
                     piece = Piece.Get(pphi.PieceId);
                     mMove(piece, pphi.Position);
+
+                    // restore piece's "not moved yet" status
+                    if (!pphi.HasMoved)
+                    {
+                        piece.ResetHasMoved();
+                    }
+
+                    // restore various board-level status items
+                    if (pphi.BoardStatus != null)
+                    {
+                        _enPassant = pphi.BoardStatus.EnPassant;
+                    }
                     break;
 
                 case BoardHistoryType.PiecePromotion:

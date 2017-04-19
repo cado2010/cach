@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Drawing;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 using Telegram.Bot;
 using Telegram.Bot.Args;
@@ -18,6 +19,7 @@ using cachCore.enums;
 using cachRendering;
 using cachCore.controllers;
 using cachRendering.models;
+using cachCore.utils;
 
 namespace cachBot
 {
@@ -25,12 +27,32 @@ namespace cachBot
     {
         private readonly TelegramBotClient Bot;
 
-        private Game _game;
-        private IBoardRenderer _boardRenderer;
-        private IRenderContext _renderContext;
+        internal class CachBotUserContext
+        {
+            internal string UserName { get; set; }
+            internal int UserId { get; set; }
+            internal ItemColor PlayerColor { get; set; }
+        }
+
+        internal class GameContext
+        {
+            internal Game Game { get; set; }
+            internal IBoardRenderer BoardRenderer { get; set; }
+            internal IRenderContext RenderContext { get; set; }
+            internal Dictionary<ItemColor, CachBotUserContext> UserContextMap { get; set; }
+            internal bool UndoRequested { get; set; }
+            internal int UndoRequestor { get; set; }
+        }
+
+        /// <summary>
+        /// map: chatId -> GameContext
+        /// </summary>
+        private ConcurrentDictionary<long, GameContext> _gameContextMap;
 
         public CachBot(string botToken)
         {
+            _gameContextMap = new ConcurrentDictionary<long, GameContext>();
+
             Bot = new TelegramBotClient(botToken);
 
             Bot.OnCallbackQuery += BotOnCallbackQueryReceived;
@@ -74,51 +96,85 @@ namespace cachBot
 
             if (message == null || message.Type != MessageType.TextMessage) return;
 
-            if (message.Text.ToLower().StartsWith("cach play"))
+            if (message.Text.ToLower().Matches(@"cach\splay\swhite"))
             {
-                // Console.WriteLine("from: " + message.From.Id);
-
-                if (_game != null)
+                await GameStart(message, ItemColor.White);
+            }
+            else if (message.Text.ToLower().Matches(@"cach\splay\sblack"))
+            {
+                await GameStart(message, ItemColor.Black);
+            }
+            else if (message.Text.ToLower().Matches(@"cach\sshow"))
+            {
+                if (!HasGameStarted(message))
                 {
-                    await SendMessage(message.Chat.Id, "Cannot start new - game already in progress");
+                    await SendMessage(message.Chat.Id, "No game in progress");
                     return;
                 }
 
-                await GameStart(message);
-
-                //await Bot.SendChatActionAsync(message.Chat.Id, ChatAction.UploadPhoto);
-
-                ////const string file = @"E:\tmp\cach\test.png";
-                ////var fileName = file.Split('\\').Last();
-
-                //var fts = new FileToSend("test", fileStream);
-
-                //// await Bot.SendPhotoAsync(message.Chat.Id, fts, "", false, 0, new ReplyKeyboardMarkup(new[] { new KeyboardButton("reply") }, true));
-                //await Bot.SendPhotoAsync(message.Chat.Id, fts, "White to move");
+                await SendBoardImage(message.Chat.Id);
             }
-            else if (((message.Text.ToLower() == "cach show")))
+            else if (message.Text.ToLower().Matches(@"cach\sshow\swhite"))
             {
-                await SendBoardImage(message);
+                if (!HasGameStarted(message))
+                {
+                    await SendMessage(message.Chat.Id, "No game in progress");
+                    return;
+                }
+
+                GameContext gc = GetGameContext(message.Chat.Id);
+                gc.RenderContext.ToPlay = ItemColor.White;
+                await SendBoardImage(message.Chat.Id);
             }
-            else if (((message.Text.ToLower() == "cach show white")))
+            else if (message.Text.ToLower().Matches(@"cach\sshow\sblack"))
             {
-                _renderContext.ToPlay = ItemColor.White;
-                await SendBoardImage(message);
+                if (!HasGameStarted(message))
+                {
+                    await SendMessage(message.Chat.Id, "No game in progress");
+                    return;
+                }
+
+                GameContext gc = GetGameContext(message.Chat.Id);
+                gc.RenderContext.ToPlay = ItemColor.Black;
+                await SendBoardImage(message.Chat.Id);
             }
-            else if (((message.Text.ToLower() == "cach show black")))
+            else if ((message.Text.ToLower().Matches(@"cach\scancel")))
             {
-                _renderContext.ToPlay = ItemColor.Black;
-                await SendBoardImage(message);
+                if (!HasGameStarted(message))
+                {
+                    await SendMessage(message.Chat.Id, "No game in progress");
+                    return;
+                }
+
+                await SendMessage(message.Chat.Id, "Ending current game");
+
+                GameContext gc = GetGameContext(message.Chat.Id);
+                gc.Game = null;
+                gc.BoardRenderer = null;
+                gc.RenderContext = null;
+                _gameContextMap.TryRemove(message.Chat.Id, out gc);
             }
-            else if (((message.Text.ToLower() == "cach cancel")))
+            else if ((message.Text.ToLower().Matches(@"cach\sundo")))
             {
-                _game = null;
+                if (!HasGameStarted(message))
+                {
+                    await SendMessage(message.Chat.Id, "No game in progress");
+                    return;
+                }
+
+                await GameUndo(message);
             }
             else if ((message.Text.ToLower().StartsWith("cach ")))
             {
-                if (_game == null)
+                if (!HasGameStarted(message))
                 {
                     await SendMessage(message.Chat.Id, "No game in progress");
+                    return;
+                }
+
+                if (HasGameEnded(message))
+                {
+                    await SendMessage(message.Chat.Id, "Game has ended, start another one");
                     return;
                 }
 
@@ -132,66 +188,232 @@ namespace cachBot
                 $"Received {callbackQueryEventArgs.CallbackQuery.Data}");
         }
 
-        private async Task GameStart(Message msg)
+        private GameContext GetGameContext(long chatId)
         {
-            _game = new GameController().CreateGame();
-            _boardRenderer = new BoardRenderer();
-
-            _renderContext = new GraphicsRenderContext()
-            {
-                Board = _game.Board,
-                Graphics = null,
-                LeftUpperOffset = new Point(0, 0),
-                TileSize = 30,
-                BorderSize = 16,
-                ToPlay = ItemColor.White
-            };
-
-            await SendBoardImage(msg);
+            GameContext gc = null;
+            _gameContextMap.TryGetValue(chatId, out gc);
+            return gc;
         }
 
-        private async Task SendBoardImage(Message msg)
+        private void SetGameContext(long chatId, GameContext gc)
         {
-            await Bot.SendChatActionAsync(msg.Chat.Id, ChatAction.UploadPhoto);
+            _gameContextMap.TryAdd(chatId, gc);
+        }
+
+        private bool HasGameStarted(Message msg)
+        {
+            GameContext gc = GetGameContext(msg.Chat.Id);
+            return gc != null && gc.Game != null;
+        }
+
+        private bool HasGameEnded(Message msg)
+        {
+            GameContext gc = GetGameContext(msg.Chat.Id);
+            return gc != null && gc.Game != null && gc.Game.Board.IsGameOver;
+        }
+
+        private async Task GameStart(Message msg, ItemColor playerColor)
+        {
+            GameContext gc = GetGameContext(msg.Chat.Id);
+            if (gc != null && gc.Game != null && !gc.Game.Board.IsGameOver)
+            {
+                await SendMessage(msg.Chat.Id, "A game is already in progress, resign or cancel it to start another");
+                return;
+            }
+            else if (gc == null)
+            {
+                // create a context to initiate required info for a game to start
+                gc = new GameContext()
+                {
+                    Game = null,
+                    BoardRenderer = null,
+                    RenderContext = null,
+                    UserContextMap = new Dictionary<ItemColor, CachBotUserContext>()
+                };
+                gc.UserContextMap[playerColor] = new CachBotUserContext()
+                {
+                    UserName = GetUserName(msg),
+                    UserId = msg.From.Id,
+                    PlayerColor = playerColor
+                };
+
+                SetGameContext(msg.Chat.Id, gc);
+
+                ItemColor other = BoardUtils.GetOtherColor(playerColor);
+                await SendMessage(msg.Chat.Id, $"Waiting for another person to choose {other.ToString()}");
+            }
+            else
+            {
+                gc.UserContextMap[playerColor] = new CachBotUserContext()
+                {
+                    UserName = msg.From.FirstName,
+                    UserId = msg.From.Id,
+                    PlayerColor = playerColor
+                };
+
+                // if both players are ready, start the game (note that a person can play against themselves)
+                if (gc.UserContextMap.ContainsKey(ItemColor.Black) &&
+                    gc.UserContextMap.ContainsKey(ItemColor.White))
+                {
+                    await SendMessage(msg.Chat.Id, $"Game start: {gc.UserContextMap[ItemColor.White].UserName} " +
+                        $"vs {gc.UserContextMap[ItemColor.Black].UserName}");
+
+                    gc.Game = new GameController().CreateGame();
+                    gc.BoardRenderer = new BoardRenderer();
+                    gc.RenderContext = new GraphicsRenderContext()
+                    {
+                        Board = gc.Game.Board,
+                        Graphics = null,
+                        LeftUpperOffset = new Point(0, 0),
+                        TileSize = 30,
+                        BorderSize = 16,
+                        ToPlay = ItemColor.White
+                    };
+
+                    await SendBoardImage(msg.Chat.Id);
+                }
+                else
+                {
+                    ItemColor other = BoardUtils.GetOtherColor(playerColor);
+                    await SendMessage(msg.Chat.Id, $"Waiting for another person to choose {other.ToString()}");
+                }
+            }
+        }
+
+        private async Task SendBoardImage(long chatId)
+        {
+            GameContext gc = GetGameContext(chatId);
+            if (gc == null)
+            {
+                // TODO: log error
+                return;
+            }
+
+            await Bot.SendChatActionAsync(chatId, ChatAction.UploadPhoto);
             using (MemoryStream m = new MemoryStream())
             {
-                _boardRenderer.RenderAsImage(_renderContext, m);
+                gc.BoardRenderer.RenderAsImage(gc.RenderContext, m);
 
                 var fts = new FileToSend("test", m);
-                await Bot.SendPhotoAsync(msg.Chat.Id, fts, $"{_game.ToPlay.ToString()} to play");
+
+                var playerCtx = gc.UserContextMap[gc.Game.ToPlay];
+                var imageMessage = gc.Game.Board.IsGameOver ? "Game over" :
+                    $"{GetNameAndColor(playerCtx.UserName, playerCtx.PlayerColor)} to play";
+
+                await Bot.SendPhotoAsync(chatId, fts, imageMessage);
             }
+        }
+
+        private async Task GameUndo(Message msg)
+        {
+            GameContext gc = GetGameContext(msg.Chat.Id);
+            if (gc.UndoRequested)
+            {
+                // check to make sure other player is confirming
+                var otherPlayerCtx = gc.UserContextMap[ItemColor.White].UserId == gc.UndoRequestor ?
+                    gc.UserContextMap[ItemColor.Black] : gc.UserContextMap[ItemColor.White];
+                if (msg.From.Id != otherPlayerCtx.UserId)
+                {
+                    await SendMessage(msg.Chat.Id, $"Error: undo has to be approved by " +
+                        $"{GetNameAndColor(otherPlayerCtx.UserName, otherPlayerCtx.PlayerColor)}");
+                    return;
+                }
+
+                if (gc.Game.MoveUndo())
+                {
+                    await SendBoardImage(msg.Chat.Id);
+                }
+                else
+                {
+                    await SendMessage(msg.Chat.Id, "Undo not possible at this time");
+                }
+
+                gc.UndoRequested = false;
+                gc.UndoRequestor = 0;
+            }
+            else
+            {
+                // initiate undo request
+                gc.UndoRequested = true;
+                gc.UndoRequestor = msg.From.Id;
+
+                var otherPlayerCtx = gc.UserContextMap[ItemColor.White].UserId == gc.UndoRequestor ?
+                    gc.UserContextMap[ItemColor.Black] : gc.UserContextMap[ItemColor.White];
+
+                await SendMessage(msg.Chat.Id, $"Undo requested by {GetNameAndColor(gc, msg)}, " +
+                    $"waiting for {GetNameAndColor(otherPlayerCtx.UserName, otherPlayerCtx.PlayerColor)} to approve");
+            }
+        }
+
+        private ItemColor GetPlayerColor(GameContext gc, Message msg)
+        {
+            return gc.UserContextMap[ItemColor.White].UserId == msg.From.Id ? ItemColor.White : ItemColor.Black;
+        }
+
+        private string GetUserName(Message msg)
+        {
+            return msg.From.FirstName;
+        }
+
+        private string GetNameAndColor(GameContext gc, Message msg)
+        {
+            return $"{GetUserName(msg)} ({GetPlayerColor(gc, msg)})";
+        }
+
+        private string GetNameAndColor(string userName, ItemColor playerColor)
+        {
+            return $"{userName} ({playerColor.ToString()})";
         }
 
         private async Task GameMove(Message msg)
         {
+            GameContext gc = GetGameContext(msg.Chat.Id);
+
+            // check player turn
+            if (gc.UserContextMap[gc.Game.ToPlay].UserId != msg.From.Id)
+            {
+                await SendMessage(msg.Chat.Id, $"It's not your turn to play {GetUserName(msg)}");
+                return;
+            }
+
+            Game game = gc.Game;
             var move = msg.Text.Substring("cach ".Length).Trim();
 
             if (move != "")
             {
-                _game.Move(move);
+                game.Move(move);
 
-                if (_game.LastMoveError != MoveErrorType.Ok)
+                if (game.LastMoveError != MoveErrorType.Ok)
                 {
-                    await SendMessage(msg.Chat.Id, $"Move error: {_game.ToPlay.ToString()} cannot make move: {move}, " +
-                        $"reason: {_game.LastMoveError.ToString()}");
+                    await SendMessage(msg.Chat.Id, $"Error: {game.ToPlay.ToString()} cannot make move: {move}, " +
+                        $"reason: {game.LastMoveError.ToString()}");
                 }
                 else
                 {
-                    await SendBoardImage(msg);
+                    // clear any undo request pending
+                    gc.UndoRequested = false;
+                    gc.UndoRequestor = 0;
+
+                    await SendBoardImage(msg.Chat.Id);
 
                     string label = "";
-                    if (_game.Board.IsGameOver)
+                    if (game.Board.IsGameOver)
                     {
-                        if (_game.Board.IsCheckMate)
-                            label = $"Check Mate [{_game.Board.Winner.ToString()}] wins!!";
-                        else if (_game.Board.IsStaleMate)
-                            label = "Stale Mate";
+                        if (game.Board.IsResign)
+                            label = $"Game over: Player resigned, [{game.Board.Winner.ToString()}] wins!!";
+                        else if (game.Board.IsCheckMate)
+                            label = $"Game over: Checkmate [{game.Board.Winner.ToString()}] wins!!";
+                        else if (game.Board.IsStaleMate)
+                            label = "Game over: Stalemate Draw";
                         else
-                            label = "Draw";
+                            label = "Game over: Draw";
+
+                        // remove player contexts
+                        gc.UserContextMap = new Dictionary<ItemColor, CachBotUserContext>();
                     }
-                    else if (_game.Board.InCheck)
+                    else if (game.Board.InCheck)
                     {
-                        label = $"{_game.Board.PlayerInCheck.ToString()} in Check!";
+                        label = $"{game.Board.PlayerInCheck.ToString()} in Check!";
                     }
 
                     if (label != "")

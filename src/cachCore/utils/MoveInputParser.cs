@@ -75,6 +75,8 @@ namespace cachCore.utils
 
         private bool _isDrawOffer;
 
+        private bool _isResign;
+
         private bool _isPromotion = false;
         private PieceType _promotedPieceType = PieceType.Unknown;
 
@@ -100,7 +102,14 @@ namespace cachCore.utils
                 CreateMoveDescriptor();
                 return;
             }
-        
+
+            if (_lowerInput == "($)")
+            {
+                _isResign = true;
+                CreateMoveDescriptor();
+                return;
+            }
+
             // parse castling moves
             if (_lowerInput == "o-o")
             {
@@ -215,6 +224,7 @@ namespace cachCore.utils
             MoveDescriptor = new MoveDescriptor()
             {
                 PieceColor = _pieceColor,
+                Move = _input.Trim(),
                 PieceType = _pieceType,
                 TargetPosition = _targetPosition,
                 StartPosition = _startPosition,
@@ -222,6 +232,7 @@ namespace cachCore.utils
                 IsQueenSideCastle = _isQueenSideCastle,
                 IsKill = _isKill,
                 IsDrawOffer = _isDrawOffer,
+                IsResign = _isResign,
                 IsPromotion = _isPromotion,
                 PromotedPieceType = _promotedPieceType
             };

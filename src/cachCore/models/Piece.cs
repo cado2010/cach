@@ -114,6 +114,11 @@ namespace cachCore.models
             IsAlive = true;
         }
 
+        public void ResetHasMoved()
+        {
+            HasMoved = false;
+        }
+
         public void Promote(Piece promotedTo)
         {
             IsPromoted = true;
