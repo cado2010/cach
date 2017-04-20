@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using cachCore.enums;
 
 namespace cachCore.models
@@ -120,6 +121,30 @@ namespace cachCore.models
             return hi;
         }
 
+        public string GetPGN()
+        {
+            string pgn = "";
+
+            if (_moveStack.Count > 0)
+            {
+                BoardMove[] moves = _moveStack.ToArray();
+                Array.Reverse(moves);
+                int moveNumber = 1;
+                for (int i = 0; i < moves.Length; i += 2, moveNumber++)
+                {
+                    string m = FixMove(moves[i].Move);
+                    pgn += $"{moveNumber}. {m} ";
+                    if (i + 1 < moves.Length)
+                    {
+                        m = FixMove(moves[i + 1].Move);
+                        pgn += $"{m} ";
+                    }
+                }
+            }
+
+            return pgn;
+        }
+
         public bool IsEmpty { get { return _boardHistoryStack.Count == 0; } }
 
         /// <summary>
@@ -128,6 +153,63 @@ namespace cachCore.models
         public int PeekMoveStepNumber
         {
             get { return _boardHistoryStack.Count > 0 ? _boardHistoryStack.Peek().MoveStepNumber : 0; }
+        }
+
+        private string FixMove(string move)
+        {
+            char fm = move[0];
+
+            switch (fm)
+            {
+                case 'k':
+                    fm = 'K';
+                    break;
+
+                case 'q':
+                    fm = 'Q';
+                    break;
+
+                case 'r':
+                    fm = 'R';
+                    break;
+
+                case 'n':
+                    fm = 'N';
+                    break;
+
+                // Bishop will already be a "B" so no replacement required
+
+                case 'A':
+                    fm = 'a';
+                    break;
+
+                case 'C':
+                    fm = 'c';
+                    break;
+
+                case 'D':
+                    fm = 'd';
+                    break;
+
+                case 'E':
+                    fm = 'e';
+                    break;
+
+                case 'F':
+                    fm = 'f';
+                    break;
+
+                case 'G':
+                    fm = 'g';
+                    break;
+
+                case 'H':
+                    fm = 'h';
+                    break;
+            }
+
+            string fmove = fm + move.Substring(1);
+            return fmove;
         }
     }
 }

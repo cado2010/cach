@@ -34,14 +34,21 @@ namespace cachBot
             internal ItemColor PlayerColor { get; set; }
         }
 
+        internal enum CoordinatedAction
+        {
+            None = 0,
+            Undo,
+            Draw
+        }
+
         internal class GameContext
         {
             internal Game Game { get; set; }
             internal IBoardRenderer BoardRenderer { get; set; }
             internal IRenderContext RenderContext { get; set; }
             internal Dictionary<ItemColor, CachBotUserContext> UserContextMap { get; set; }
-            internal bool UndoRequested { get; set; }
-            internal int UndoRequestor { get; set; }
+            internal CoordinatedAction ActionRequested { get; set; }
+            internal int ActionRequestor { get; set; }
         }
 
         /// <summary>
@@ -96,7 +103,11 @@ namespace cachBot
 
             if (message == null || message.Type != MessageType.TextMessage) return;
 
-            if (message.Text.ToLower().Matches(@"cach\splay\swhite"))
+            if (message.Text.ToLower().Matches(@"cach\shelp"))
+            {
+                await SendHelp(message);
+            }
+            else if (message.Text.ToLower().Matches(@"cach\splay\swhite"))
             {
                 await GameStart(message, ItemColor.White);
             }
@@ -106,7 +117,7 @@ namespace cachBot
             }
             else if (message.Text.ToLower().Matches(@"cach\sshow"))
             {
-                if (!HasGameStarted(message))
+                if (!IsGameInProgress(message))
                 {
                     await SendMessage(message.Chat.Id, "No game in progress");
                     return;
@@ -116,7 +127,7 @@ namespace cachBot
             }
             else if (message.Text.ToLower().Matches(@"cach\sshow\swhite"))
             {
-                if (!HasGameStarted(message))
+                if (!IsGameInProgress(message))
                 {
                     await SendMessage(message.Chat.Id, "No game in progress");
                     return;
@@ -128,7 +139,7 @@ namespace cachBot
             }
             else if (message.Text.ToLower().Matches(@"cach\sshow\sblack"))
             {
-                if (!HasGameStarted(message))
+                if (!IsGameInProgress(message))
                 {
                     await SendMessage(message.Chat.Id, "No game in progress");
                     return;
@@ -140,7 +151,7 @@ namespace cachBot
             }
             else if ((message.Text.ToLower().Matches(@"cach\scancel")))
             {
-                if (!HasGameStarted(message))
+                if (!IsGameInProgress(message))
                 {
                     await SendMessage(message.Chat.Id, "No game in progress");
                     return;
@@ -156,7 +167,7 @@ namespace cachBot
             }
             else if ((message.Text.ToLower().Matches(@"cach\sundo")))
             {
-                if (!HasGameStarted(message))
+                if (!IsGameInProgress(message))
                 {
                     await SendMessage(message.Chat.Id, "No game in progress");
                     return;
@@ -164,17 +175,41 @@ namespace cachBot
 
                 await GameUndo(message);
             }
-            else if ((message.Text.ToLower().StartsWith("cach ")))
+            else if ((message.Text.ToLower().Matches(@"cach\sdraw")))
             {
-                if (!HasGameStarted(message))
+                if (!IsGameInProgress(message))
                 {
                     await SendMessage(message.Chat.Id, "No game in progress");
                     return;
                 }
 
-                if (HasGameEnded(message))
+                await GameDraw(message);
+            }
+            else if ((message.Text.ToLower().Matches(@"cach\sresign")))
+            {
+                if (!IsGameInProgress(message))
                 {
-                    await SendMessage(message.Chat.Id, "Game has ended, start another one");
+                    await SendMessage(message.Chat.Id, "No game in progress");
+                    return;
+                }
+
+                await GameResign(message);
+            }
+            else if ((message.Text.ToLower().Matches(@"cach\spgn")))
+            {
+                if (!IsGameInProgress(message))
+                {
+                    await SendMessage(message.Chat.Id, "No game in progress");
+                    return;
+                }
+
+                await GamePGN(message);
+            }
+            else if ((message.Text.ToLower().StartsWith("cach ")))
+            {
+                if (!IsGameInProgress(message))
+                {
+                    await SendMessage(message.Chat.Id, "No game in progress");
                     return;
                 }
 
@@ -200,6 +235,12 @@ namespace cachBot
             _gameContextMap.TryAdd(chatId, gc);
         }
 
+        private bool IsGameInProgress(Message msg)
+        {
+            GameContext gc = GetGameContext(msg.Chat.Id);
+            return gc != null && gc.Game != null && !gc.Game.Board.IsGameOver;
+        }
+
         private bool HasGameStarted(Message msg)
         {
             GameContext gc = GetGameContext(msg.Chat.Id);
@@ -215,7 +256,7 @@ namespace cachBot
         private async Task GameStart(Message msg, ItemColor playerColor)
         {
             GameContext gc = GetGameContext(msg.Chat.Id);
-            if (gc != null && gc.Game != null && !gc.Game.Board.IsGameOver)
+            if (IsGameInProgress(msg))
             {
                 await SendMessage(msg.Chat.Id, "A game is already in progress, resign or cancel it to start another");
                 return;
@@ -307,14 +348,14 @@ namespace cachBot
         private async Task GameUndo(Message msg)
         {
             GameContext gc = GetGameContext(msg.Chat.Id);
-            if (gc.UndoRequested)
+            if (gc.ActionRequested == CoordinatedAction.Undo)
             {
                 // check to make sure other player is confirming
-                var otherPlayerCtx = gc.UserContextMap[ItemColor.White].UserId == gc.UndoRequestor ?
+                var otherPlayerCtx = gc.UserContextMap[ItemColor.White].UserId == gc.ActionRequestor ?
                     gc.UserContextMap[ItemColor.Black] : gc.UserContextMap[ItemColor.White];
                 if (msg.From.Id != otherPlayerCtx.UserId)
                 {
-                    await SendMessage(msg.Chat.Id, $"Error: undo has to be approved by " +
+                    await SendMessage(msg.Chat.Id, $"Error: Undo request has to be approved by " +
                         $"{GetNameAndColor(otherPlayerCtx.UserName, otherPlayerCtx.PlayerColor)}");
                     return;
                 }
@@ -328,20 +369,81 @@ namespace cachBot
                     await SendMessage(msg.Chat.Id, "Undo not possible at this time");
                 }
 
-                gc.UndoRequested = false;
-                gc.UndoRequestor = 0;
+                gc.ActionRequested = CoordinatedAction.None;
+                gc.ActionRequestor = 0;
             }
             else
             {
                 // initiate undo request
-                gc.UndoRequested = true;
-                gc.UndoRequestor = msg.From.Id;
+                gc.ActionRequested = CoordinatedAction.Undo;
+                gc.ActionRequestor = msg.From.Id;
 
-                var otherPlayerCtx = gc.UserContextMap[ItemColor.White].UserId == gc.UndoRequestor ?
+                var otherPlayerCtx = gc.UserContextMap[ItemColor.White].UserId == gc.ActionRequestor ?
                     gc.UserContextMap[ItemColor.Black] : gc.UserContextMap[ItemColor.White];
 
                 await SendMessage(msg.Chat.Id, $"Undo requested by {GetNameAndColor(gc, msg)}, " +
                     $"waiting for {GetNameAndColor(otherPlayerCtx.UserName, otherPlayerCtx.PlayerColor)} to approve");
+            }
+        }
+
+        private async Task GameDraw(Message msg)
+        {
+            GameContext gc = GetGameContext(msg.Chat.Id);
+            if (gc.ActionRequested == CoordinatedAction.Draw)
+            {
+                // check to make sure other player is confirming
+                var otherPlayerCtx = gc.UserContextMap[ItemColor.White].UserId == gc.ActionRequestor ?
+                    gc.UserContextMap[ItemColor.Black] : gc.UserContextMap[ItemColor.White];
+                if (msg.From.Id != otherPlayerCtx.UserId)
+                {
+                    await SendMessage(msg.Chat.Id, $"Error: Draw offer has to be approved by " +
+                        $"{GetNameAndColor(otherPlayerCtx.UserName, otherPlayerCtx.PlayerColor)}");
+                    return;
+                }
+
+                gc.Game.Draw();
+
+                await SendBoardImage(msg.Chat.Id);
+                await CheckSendGameStatus(msg);
+
+                gc.ActionRequested = CoordinatedAction.None;
+                gc.ActionRequestor = 0;
+            }
+            else
+            {
+                // initiate draw request
+                gc.ActionRequested = CoordinatedAction.Draw;
+                gc.ActionRequestor = msg.From.Id;
+
+                var otherPlayerCtx = gc.UserContextMap[ItemColor.White].UserId == gc.ActionRequestor ?
+                    gc.UserContextMap[ItemColor.Black] : gc.UserContextMap[ItemColor.White];
+
+                await SendMessage(msg.Chat.Id, $"Draw offer by {GetNameAndColor(gc, msg)}, " +
+                    $"waiting for {GetNameAndColor(otherPlayerCtx.UserName, otherPlayerCtx.PlayerColor)} to approve");
+            }
+        }
+
+        private async Task GameResign(Message msg)
+        {
+            GameContext gc = GetGameContext(msg.Chat.Id);
+            ItemColor playerColor = GetPlayerColor(gc, msg);
+
+            Game game = gc.Game;
+            game.Resign(playerColor);
+
+            await SendBoardImage(msg.Chat.Id);
+
+            await CheckSendGameStatus(msg);
+        }
+
+        private async Task GamePGN(Message msg)
+        {
+            GameContext gc = GetGameContext(msg.Chat.Id);
+
+            string pgn = gc.Game.Board.GetPGN();
+            if (pgn.Trim().Length > 0)
+            {
+                await SendMessage(msg.Chat.Id, pgn);
             }
         }
 
@@ -391,37 +493,66 @@ namespace cachBot
                 else
                 {
                     // clear any undo request pending
-                    gc.UndoRequested = false;
-                    gc.UndoRequestor = 0;
+                    gc.ActionRequested = CoordinatedAction.None;
+                    gc.ActionRequestor = 0;
 
                     await SendBoardImage(msg.Chat.Id);
 
-                    string label = "";
-                    if (game.Board.IsGameOver)
-                    {
-                        if (game.Board.IsResign)
-                            label = $"Game over: Player resigned, [{game.Board.Winner.ToString()}] wins!!";
-                        else if (game.Board.IsCheckMate)
-                            label = $"Game over: Checkmate [{game.Board.Winner.ToString()}] wins!!";
-                        else if (game.Board.IsStaleMate)
-                            label = "Game over: Stalemate Draw";
-                        else
-                            label = "Game over: Draw";
-
-                        // remove player contexts
-                        gc.UserContextMap = new Dictionary<ItemColor, CachBotUserContext>();
-                    }
-                    else if (game.Board.InCheck)
-                    {
-                        label = $"{game.Board.PlayerInCheck.ToString()} in Check!";
-                    }
-
-                    if (label != "")
-                    {
-                        await SendMessage(msg.Chat.Id, label);
-                    }
+                    await CheckSendGameStatus(msg);
                 }
             }
+        }
+
+        private async Task CheckSendGameStatus(Message msg)
+        {
+            GameContext gc = GetGameContext(msg.Chat.Id);
+            Game game = gc.Game;
+
+            string label = "";
+            if (game.Board.IsGameOver)
+            {
+                if (game.Board.IsResign)
+                    label = $"Game over: Player resigned, [{game.Board.Winner.ToString()}] wins!!";
+                else if (game.Board.IsCheckMate)
+                    label = $"Game over: Checkmate [{game.Board.Winner.ToString()}] wins!!";
+                else if (game.Board.IsStaleMate)
+                    label = "Game over: Stalemate Draw";
+                else
+                    label = "Game over: Draw";
+
+                // remove player contexts
+                gc.UserContextMap = new Dictionary<ItemColor, CachBotUserContext>();
+            }
+            else if (game.Board.InCheck)
+            {
+                label = $"{game.Board.PlayerInCheck.ToString()} in Check!";
+            }
+
+            if (label != "")
+            {
+                await SendMessage(msg.Chat.Id, label);
+            }
+        }
+
+        private async Task SendHelp(Message msg)
+        {
+            var help = @"
+Cach commands are of the format: cach <command>
+where <command> can be one of:
+help: this help menu
+play black: start game as Black
+play white: start game as White
+move <move specification>: player move in alebraic notation
+show: display current board image
+show black: switch to player as Black and display board image
+show white: switch to player as White and display board image
+undo: perform half-move undo after both players type undo
+draw: end game as Draw after both players type draw
+resign: end game as other player wins
+cancel: terminate current game
+";
+
+            await SendMessage(msg.Chat.Id, help);
         }
     }
 }

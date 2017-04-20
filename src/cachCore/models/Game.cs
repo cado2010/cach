@@ -53,12 +53,28 @@ namespace cachCore.models
                 }
                 else if (LastMoveError == MoveErrorType.Ok)
                 {
-                    _toPlay = _toPlay == ItemColor.White ? ItemColor.Black : ItemColor.White;
+                    _toPlay = BoardUtils.GetOtherColor(_toPlay);
                 }
             }
             else
             {
-                _logger.Error($"Game is over");
+                _logger.Error($"Move: Game is over");
+            }
+        }
+
+        public void Resign(ItemColor playerColor)
+        {
+            if (!_board.IsGameOver)
+            {
+                _board.Move(playerColor, "($)");
+            }
+        }
+
+        public void Draw()
+        {
+            if (!_board.IsGameOver)
+            {
+                _board.Move(_toPlay, "(=)");
             }
         }
 

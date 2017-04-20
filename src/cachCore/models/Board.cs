@@ -532,6 +532,11 @@ namespace cachCore.models
             }
         }
 
+        public string GetPGN()
+        {
+            return _boardHistory.GetPGN();
+        }
+
         //-------------------------------------------------------------------------------
         // private impl
 
