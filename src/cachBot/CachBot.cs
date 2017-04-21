@@ -115,16 +115,6 @@ namespace cachBot
             {
                 await GameStart(message, ItemColor.Black);
             }
-            else if (message.Text.ToLower().Matches(@"cach\sshow"))
-            {
-                if (!IsGameInProgress(message))
-                {
-                    await SendMessage(message.Chat.Id, "No game in progress");
-                    return;
-                }
-
-                await SendBoardImage(message.Chat.Id);
-            }
             else if (message.Text.ToLower().Matches(@"cach\sshow\swhite"))
             {
                 if (!IsGameInProgress(message))
@@ -147,6 +137,16 @@ namespace cachBot
 
                 GameContext gc = GetGameContext(message.Chat.Id);
                 gc.RenderContext.ToPlay = ItemColor.Black;
+                await SendBoardImage(message.Chat.Id);
+            }
+            else if (message.Text.ToLower().Matches(@"cach\sshow"))
+            {
+                if (!IsGameInProgress(message))
+                {
+                    await SendMessage(message.Chat.Id, "No game in progress");
+                    return;
+                }
+
                 await SendBoardImage(message.Chat.Id);
             }
             else if ((message.Text.ToLower().Matches(@"cach\scancel")))
