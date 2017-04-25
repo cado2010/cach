@@ -80,7 +80,7 @@ namespace cachBot
 
         private void BotOnReceiveError(object sender, ReceiveErrorEventArgs receiveErrorEventArgs)
         {
-            Debugger.Break();
+            // Debugger.Break();
         }
 
         private void BotOnChosenInlineResultReceived(object sender, ChosenInlineResultEventArgs chosenInlineResultEventArgs)
@@ -103,19 +103,19 @@ namespace cachBot
 
             if (message == null || message.Type != MessageType.TextMessage) return;
 
-            if (message.Text.ToLower().Matches(@"cach\shelp"))
+            if (message.Text.ToLower().Matches(@"^cach\shelp"))
             {
                 await SendHelp(message);
             }
-            else if (message.Text.ToLower().Matches(@"cach\splay\swhite"))
+            else if (message.Text.ToLower().Matches(@"^cach\splay\swhite"))
             {
                 await GameStart(message, ItemColor.White);
             }
-            else if (message.Text.ToLower().Matches(@"cach\splay\sblack"))
+            else if (message.Text.ToLower().Matches(@"^cach\splay\sblack"))
             {
                 await GameStart(message, ItemColor.Black);
             }
-            else if (message.Text.ToLower().Matches(@"cach\sshow\swhite"))
+            else if (message.Text.ToLower().Matches(@"^cach\sshow\swhite"))
             {
                 if (!IsGameInProgress(message))
                 {
@@ -127,7 +127,7 @@ namespace cachBot
                 gc.RenderContext.ToPlay = ItemColor.White;
                 await SendBoardImage(message.Chat.Id);
             }
-            else if (message.Text.ToLower().Matches(@"cach\sshow\sblack"))
+            else if (message.Text.ToLower().Matches(@"^cach\sshow\sblack"))
             {
                 if (!IsGameInProgress(message))
                 {
@@ -139,7 +139,7 @@ namespace cachBot
                 gc.RenderContext.ToPlay = ItemColor.Black;
                 await SendBoardImage(message.Chat.Id);
             }
-            else if (message.Text.ToLower().Matches(@"cach\sshow"))
+            else if (message.Text.ToLower().Matches(@"^cach\sshow"))
             {
                 if (!IsGameInProgress(message))
                 {
@@ -149,7 +149,7 @@ namespace cachBot
 
                 await SendBoardImage(message.Chat.Id);
             }
-            else if ((message.Text.ToLower().Matches(@"cach\scancel")))
+            else if ((message.Text.ToLower().Matches(@"^cach\scancel")))
             {
                 if (!IsGameInProgress(message))
                 {
@@ -165,7 +165,7 @@ namespace cachBot
                 gc.RenderContext = null;
                 _gameContextMap.TryRemove(message.Chat.Id, out gc);
             }
-            else if ((message.Text.ToLower().Matches(@"cach\sundo")))
+            else if ((message.Text.ToLower().Matches(@"^cach\sundo")))
             {
                 if (!IsGameInProgress(message))
                 {
@@ -175,7 +175,7 @@ namespace cachBot
 
                 await GameUndo(message);
             }
-            else if ((message.Text.ToLower().Matches(@"cach\sdraw")))
+            else if ((message.Text.ToLower().Matches(@"^cach\sdraw")))
             {
                 if (!IsGameInProgress(message))
                 {
@@ -185,7 +185,7 @@ namespace cachBot
 
                 await GameDraw(message);
             }
-            else if ((message.Text.ToLower().Matches(@"cach\sresign")))
+            else if ((message.Text.ToLower().Matches(@"^cach\sresign")))
             {
                 if (!IsGameInProgress(message))
                 {
@@ -195,7 +195,7 @@ namespace cachBot
 
                 await GameResign(message);
             }
-            else if ((message.Text.ToLower().Matches(@"cach\spgn")))
+            else if ((message.Text.ToLower().Matches(@"^cach\spgn")))
             {
                 if (!IsGameInProgress(message))
                 {
@@ -205,7 +205,17 @@ namespace cachBot
 
                 await GamePGN(message);
             }
-            else if ((message.Text.ToLower().StartsWith("cach ")))
+            else if ((message.Text.ToLower().Matches("^cach load ")))
+            {
+                if (!IsGameInProgress(message))
+                {
+                    await SendMessage(message.Chat.Id, "No game in progress");
+                    return;
+                }
+
+                await GameLoadPGN(message);
+            }
+            else if ((message.Text.ToLower().StartsWith("^cach ")))
             {
                 if (!IsGameInProgress(message))
                 {
@@ -465,6 +475,24 @@ namespace cachBot
         private string GetNameAndColor(string userName, ItemColor playerColor)
         {
             return $"{userName} ({playerColor.ToString()})";
+        }
+
+        private async Task GameLoadPGN(Message msg)
+        {
+            GameContext gc = GetGameContext(msg.Chat.Id);
+            string pgn = msg.Text.Substring("cach load ".Length);
+
+            // create new game with PGN
+            gc.Game = new Game(pgn);
+
+            // reset other things
+            gc.RenderContext.Board = gc.Game.Board;
+            gc.ActionRequested = CoordinatedAction.None;
+            gc.ActionRequestor = 0;
+
+            await SendMessage(msg.Chat.Id, "Loading game from PGN ...");
+            await SendBoardImage(msg.Chat.Id);
+            await CheckSendGameStatus(msg);
         }
 
         private async Task GameMove(Message msg)

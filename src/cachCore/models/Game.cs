@@ -20,11 +20,24 @@ namespace cachCore.models
         {
             _logger = LogManager.GetLogger(GetType().Name);
 
+            Id = Guid.NewGuid().ToString();
+            _logger.Debug($"Game: {Id} created with given board");
+
             _board = board;
             _toPlay = ItemColor.White;
+        }
+
+        public Game(string pgn)
+        {
+            _logger = LogManager.GetLogger(GetType().Name);
 
             Id = Guid.NewGuid().ToString();
-            _logger.Debug($"Game: {Id} created");
+            _logger.Debug($"Game: {Id} created from PGN: {pgn}");
+
+            _board = new Board();
+            _toPlay = ItemColor.White;
+
+            LoadPGN(pgn);
         }
 
         public MoveErrorType LastMoveError { get; private set; }
@@ -87,6 +100,15 @@ namespace cachCore.models
             }
 
             return false;
+        }
+
+        private void LoadPGN(string pgn)
+        {
+            PGNParser parser = new PGNParser(pgn);
+            foreach (var m in parser.Moves)
+            {
+                Move(m);
+            }
         }
     }
 }

@@ -55,6 +55,7 @@
     <Compile Include="ruletests\InCheckHelperTests.cs" />
     <Compile Include="TestsInitializer.cs" />
     <Compile Include="utilTests\FENSerializerTests.cs" />
+    <Compile Include="utilTests\PGNParserTests.cs" />
     <Compile Include="utilTests\MoveInputParserTests.cs" />
     <Compile Include="TestClass.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

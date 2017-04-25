@@ -55,6 +55,7 @@
     <Compile Include="enums\PieceType.cs" />
     <Compile Include="enums\ItemColor.cs" />
     <Compile Include="exceptions\CachException.cs" />
+    <Compile Include="Extensions.cs" />
     <Compile Include="models\Board.cs" />
     <Compile Include="models\Bishop.cs" />
     <Compile Include="models\BoardHistoryItem.cs" />
@@ -78,6 +79,7 @@
     <Compile Include="models\Piece.cs" />
     <Compile Include="models\Position.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="utils\PGNParser.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
