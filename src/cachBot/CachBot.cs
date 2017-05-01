@@ -215,7 +215,7 @@ namespace cachBot
 
                 await GameLoadPGN(message);
             }
-            else if ((message.Text.ToLower().StartsWith("^cach ")))
+            else if ((message.Text.ToLower().Matches("^cach ")))
             {
                 if (!IsGameInProgress(message))
                 {

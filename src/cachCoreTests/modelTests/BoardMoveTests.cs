@@ -146,5 +146,23 @@ namespace cachCoreTests
             Board board = FENSerializer.BoardFromFEN("8/7P/8/8/8/8/7R/k1K5 w - -");
             Assert.AreNotEqual(board.Move(pieceColor, move), MoveErrorType.Ok);
         }
+
+        [Test]
+        [TestCase("3k4/8/8/8/8/P7/P7/K7 w - -", ItemColor.White, "a4")]
+        [TestCase("3k4/8/8/8/8/8/P7/K7 w - -", ItemColor.White, "a4")]
+        public void pawn_move_should_succeed(string fen, ItemColor pieceColor, string move)
+        {
+            Board board = FENSerializer.BoardFromFEN(fen);
+            Assert.AreEqual(board.Move(pieceColor, move), MoveErrorType.Ok);
+        }
+
+        [Test]
+        [TestCase("3k4/8/8/8/8/B7/P7/K7 w - -", ItemColor.White, "a4")]
+        [TestCase("3k4/8/8/8/8/b7/P7/K7 w - -", ItemColor.White, "a4")]
+        public void pawn_move_should_fail(string fen, ItemColor pieceColor, string move)
+        {
+            Board board = FENSerializer.BoardFromFEN(fen);
+            Assert.AreNotEqual(board.Move(pieceColor, move), MoveErrorType.Ok);
+        }
     }
 }

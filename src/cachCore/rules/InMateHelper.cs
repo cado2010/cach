@@ -48,7 +48,8 @@ namespace cachCore.rules
             SafePosition = Position.Invalid;
             OwnArmyKiller = OwnArmyBlocker = CanMovePiece = null;
 
-            King king = _board.GetActivePieces(_pieceColor, PieceType.King)[0] as King;
+            IList<Piece> kings = _board.GetActivePieces(_pieceColor, PieceType.King);
+            King king = kings[0] as King;
 
             var checkHelper = new InCheckHelper(_board, _pieceColor, king.Position);
             if (checkHelper.IsInCheck)

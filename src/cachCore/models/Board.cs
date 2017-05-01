@@ -484,6 +484,21 @@ namespace cachCore.models
         /// </summary>
         public void CheckGameStatus()
         {
+            // sanity of board
+            IList<Piece> kings = GetActivePieces(ItemColor.White, PieceType.King);
+            // invalid board for checking status
+            if (kings.Count == 0)
+            {
+                return;
+            }
+
+            kings = GetActivePieces(ItemColor.Black, PieceType.King);
+            // invalid board for checking status
+            if (kings.Count == 0)
+            {
+                return;
+            }
+
             // either color in Mate
             var imHelper = new InMateHelper(this, ItemColor.Black);
             if (imHelper.IsCheckMate)

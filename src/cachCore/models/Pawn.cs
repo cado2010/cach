@@ -17,22 +17,24 @@ namespace cachCore.models
 
             if (PieceColor == ItemColor.White)
             {
-                paths.Add(new List<Position> { Position.Up });
+                IList<Position> stPath = new List<Position> { Position.Up };
+                paths.Add(stPath);
                 paths.Add(new List<Position> { Position.LeftUp });
                 paths.Add(new List<Position> { Position.RightUp });
                 if (Position.Row == BoardUtils.GetPawnStartRow(PieceColor))
                 {
-                    paths.Add(new List<Position> { Position.Up.Up });
+                    stPath.Add(Position.Up.Up);
                 }
             }
             else
             {
-                paths.Add(new List<Position> { Position.Down });
+                IList<Position> stPath = new List<Position> { Position.Down };
+                paths.Add(stPath);
                 paths.Add(new List<Position> { Position.LeftDown });
                 paths.Add(new List<Position> { Position.RightDown });
                 if (Position.Row == BoardUtils.GetPawnStartRow(PieceColor))
                 {
-                    paths.Add(new List<Position> { Position.Down.Down });
+                    stPath.Add(Position.Down.Down);
                 }
             }
 
