@@ -81,12 +81,12 @@ namespace cachCore.rules
             {
                 Position p0 = _kingPosition.LeftUp;
                 Position p1 = _kingPosition.RightUp;
-                if (!p0.IsOutOfBounds() && _board[p0].IsOccupiedByPieceOfColor(ItemColor.Black))
+                if (!p0.IsOutOfBounds() && _board[p0].IsOccupiedByPieceOfColorAndType(ItemColor.Black, PieceType.Pawn))
                 {
                     Attacker = _board[p0].Piece;
                     return true;
                 }
-                else if (!p1.IsOutOfBounds() && _board[p1].IsOccupiedByPieceOfColor(ItemColor.Black))
+                else if (!p1.IsOutOfBounds() && _board[p1].IsOccupiedByPieceOfColorAndType(ItemColor.Black, PieceType.Pawn))
                 {
                     Attacker = _board[p1].Piece;
                     return true;
@@ -96,12 +96,12 @@ namespace cachCore.rules
             {
                 Position p0 = _kingPosition.LeftDown;
                 Position p1 = _kingPosition.RightDown;
-                if (!p0.IsOutOfBounds() && _board[p0].IsOccupiedByPieceOfColor(ItemColor.White))
+                if (!p0.IsOutOfBounds() && _board[p0].IsOccupiedByPieceOfColorAndType(ItemColor.White, PieceType.Pawn))
                 {
                     Attacker = _board[p0].Piece;
                     return true;
                 }
-                else if (!p1.IsOutOfBounds() && _board[p1].IsOccupiedByPieceOfColor(ItemColor.White))
+                else if (!p1.IsOutOfBounds() && _board[p1].IsOccupiedByPieceOfColorAndType(ItemColor.White, PieceType.Pawn))
                 {
                     Attacker = _board[p1].Piece;
                     return true;

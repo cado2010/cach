@@ -14,6 +14,7 @@ namespace cachCoreTests
         [TestCase("3q4/8/8/8/8/3P4/8/3K4 w - -", ItemColor.White)]
         [TestCase("3k4/8/8/3P4/8/8/8/3QK3 w - -", ItemColor.Black)]
         [TestCase("7Q/8/8/8/8/8/k7/2K4R w - -", ItemColor.Black)]
+        [TestCase("6k1/5ppp/8/2p5/1p5P/r2P4/1K6/r7 w - -", ItemColor.White)]
         public void not_in_check_test(string fen, ItemColor pieceColor)
         {
             Board board = FENSerializer.BoardFromFEN(fen);

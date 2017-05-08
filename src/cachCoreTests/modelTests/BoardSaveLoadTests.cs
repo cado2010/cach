@@ -24,7 +24,7 @@ namespace cachCoreTests
             Assert.Pass();
         }
 
-        [Test]
+        //[Test]
         public void test_board_load()
         {
             try

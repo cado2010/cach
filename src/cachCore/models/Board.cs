@@ -109,6 +109,8 @@ namespace cachCore.models
             Piece.Remove(allPieces);
         }
 
+        public IList<BoardMove> Moves => _boardHistory.Moves;
+
         /// <summary>
         /// 
         /// </summary>

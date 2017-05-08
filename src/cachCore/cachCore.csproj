@@ -60,6 +60,7 @@
     <Compile Include="models\Bishop.cs" />
     <Compile Include="models\BoardHistoryItem.cs" />
     <Compile Include="models\BoardHistory.cs" />
+    <Compile Include="models\BoardMove.cs" />
     <Compile Include="models\BoardSquare.cs" />
     <Compile Include="models\BoardStatus.cs" />
     <Compile Include="models\Game.cs" />

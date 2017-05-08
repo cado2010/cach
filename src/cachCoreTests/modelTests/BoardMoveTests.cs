@@ -159,10 +159,23 @@ namespace cachCoreTests
         [Test]
         [TestCase("3k4/8/8/8/8/B7/P7/K7 w - -", ItemColor.White, "a4")]
         [TestCase("3k4/8/8/8/8/b7/P7/K7 w - -", ItemColor.White, "a4")]
+        [TestCase("3k4/8/8/8/8/8/2p5/7K b - -", ItemColor.Black, "c1")]
         public void pawn_move_should_fail(string fen, ItemColor pieceColor, string move)
         {
             Board board = FENSerializer.BoardFromFEN(fen);
             Assert.AreNotEqual(board.Move(pieceColor, move), MoveErrorType.Ok);
         }
+
+        [Test]
+        [TestCase("3k4/8/8/8/8/8/2p5/7K b - -", ItemColor.Black, "c1=Q")]
+        public void pawn_promo_should_succeed(string fen, ItemColor pieceColor, string move)
+        {
+            Board board = FENSerializer.BoardFromFEN(fen);
+            Assert.AreEqual(board.Move(pieceColor, move), MoveErrorType.Ok);
+            BoardMove bm = board.Moves[0];
+            Assert.AreEqual(bm.Move, move);
+        }
+
+
     }
 }

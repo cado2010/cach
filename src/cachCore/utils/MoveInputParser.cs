@@ -13,6 +13,8 @@ namespace cachCore.utils
         private ItemColor _pieceColor;
         private string _input;
 
+        private string _promotionSuffix = "";
+
         private string _lowerInput;
         private readonly static Dictionary<char, PieceType> _charToPieceTypeMap;
 
@@ -131,7 +133,8 @@ namespace cachCore.utils
             // for example e8=Q or d1=R
             if (_input.Length > 2 && _input[_input.Length - 2] == '=')
             {
-                SetPromotionOptions(_lowerInput);
+                char pt = SetPromotionOptions(_lowerInput);
+                _promotionSuffix = "=" + pt;
                 _input = _input.Substring(0, _input.Length - 2);
                 _lowerInput = _input.ToLower();
             }
@@ -224,7 +227,7 @@ namespace cachCore.utils
             MoveDescriptor = new MoveDescriptor()
             {
                 PieceColor = _pieceColor,
-                Move = _input.Trim(),
+                Move = _input.Trim() + _promotionSuffix,
                 PieceType = _pieceType,
                 TargetPosition = _targetPosition,
                 StartPosition = _startPosition,
@@ -268,24 +271,29 @@ namespace cachCore.utils
             }
         }
 
-        private void SetPromotionOptions(string lowerInput)
+        private char SetPromotionOptions(string lowerInput)
         {
+            char pt;
             switch (lowerInput[lowerInput.Length - 1])
             {
                 case 'q':
                     _promotedPieceType = PieceType.Queen;
+                    pt = 'Q';
                     break;
 
                 case 'r':
                     _promotedPieceType = PieceType.Rook;
+                    pt = 'R';
                     break;
 
                 case 'b':
                     _promotedPieceType = PieceType.Bishop;
+                    pt = 'B';
                     break;
 
                 case 'n':
                     _promotedPieceType = PieceType.Knight;
+                    pt = 'N';
                     break;
 
                 default:
@@ -294,6 +302,7 @@ namespace cachCore.utils
             }
 
             _isPromotion = true;
+            return pt;
         }
     }
 }

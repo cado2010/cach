@@ -197,12 +197,6 @@ namespace cachBot
             }
             else if ((message.Text.ToLower().Matches(@"^cach\spgn")))
             {
-                if (!IsGameInProgress(message))
-                {
-                    await SendMessage(message.Chat.Id, "No game in progress");
-                    return;
-                }
-
                 await GamePGN(message);
             }
             else if ((message.Text.ToLower().Matches("^cach load ")))
@@ -248,19 +242,19 @@ namespace cachBot
         private bool IsGameInProgress(Message msg)
         {
             GameContext gc = GetGameContext(msg.Chat.Id);
-            return gc != null && gc.Game != null && !gc.Game.Board.IsGameOver;
+            return gc?.Game != null && !gc.Game.Board.IsGameOver;
         }
 
         private bool HasGameStarted(Message msg)
         {
             GameContext gc = GetGameContext(msg.Chat.Id);
-            return gc != null && gc.Game != null;
+            return gc?.Game != null;
         }
 
         private bool HasGameEnded(Message msg)
         {
             GameContext gc = GetGameContext(msg.Chat.Id);
-            return gc != null && gc.Game != null && gc.Game.Board.IsGameOver;
+            return gc?.Game != null && gc.Game.Board.IsGameOver;
         }
 
         private async Task GameStart(Message msg, ItemColor playerColor)
@@ -448,12 +442,22 @@ namespace cachBot
 
         private async Task GamePGN(Message msg)
         {
+            if (!HasGameStarted(msg))
+            {
+                await SendMessage(msg.Chat.Id, "No current game");
+                return;
+            }
+
             GameContext gc = GetGameContext(msg.Chat.Id);
 
             string pgn = gc.Game.Board.GetPGN();
             if (pgn.Trim().Length > 0)
             {
                 await SendMessage(msg.Chat.Id, pgn);
+            }
+            else
+            {
+                await SendMessage(msg.Chat.Id, "No moves yet");
             }
         }
 

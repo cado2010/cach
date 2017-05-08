@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using cachCore.enums;
 
 namespace cachCore.models
@@ -8,17 +9,6 @@ namespace cachCore.models
     {
         private Stack<BoardHistoryItem> _boardHistoryStack;
 
-        internal class BoardMove
-        {
-            /// <summary>
-            /// This is the "official" move number which consists of both a White and a Black move
-            /// </summary>
-            internal int MoveNumber { get; set; }
-
-            internal int MoveStepNumber { get; set; }
-            internal ItemColor PieceColor { get; set; }
-            internal string Move { get; set; }
-        }
         private Stack<BoardMove> _moveStack;
 
         /// <summary>
@@ -37,6 +27,8 @@ namespace cachCore.models
             _boardHistoryStack = new Stack<BoardHistoryItem>();
             _moveStack = new Stack<BoardMove>();
         }
+
+        public IList<BoardMove> Moves => _moveStack.ToList();
 
         /// <summary>
         /// Stores current position of the given piece
