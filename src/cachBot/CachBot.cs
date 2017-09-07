@@ -20,6 +20,7 @@ using cachRendering;
 using cachCore.controllers;
 using cachRendering.models;
 using cachCore.utils;
+using Game = cachCore.models.Game;
 
 namespace cachBot
 {
