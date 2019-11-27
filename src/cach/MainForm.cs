@@ -7,6 +7,8 @@ using cachCore.enums;
 using cachCore.controllers;
 using cachRendering.models;
 using cachRendering;
+using cacheEngine;
+using cacheEngine.models;
 
 namespace cach
 {
@@ -14,6 +16,8 @@ namespace cach
     {
         private Game _game;
         private IBoardRenderer _boardRenderer;
+        private Engine _engine;
+        private Random _random;
 
         const int tileSize = 80;
         const int gridSize = 8;
@@ -26,6 +30,8 @@ namespace cach
 
             _game = new GameController().CreateGame();
             _boardRenderer = new BoardRenderer();
+            _engine = new Engine(_game.Board, ItemColor.Black);
+            _random = new Random();
 
             labelNextToMove.Text = _game.ToPlay.ToString();
             labelGameStatus.Text = "";
@@ -69,25 +75,45 @@ namespace cach
 
         private void buttonMove_Click(object sender, EventArgs e)
         {
+            buttonMove.Enabled = false;
+
             string move = textBoxMove.Text.Trim();
             if (move != "")
             {
                 _game.Move(move);
 
+                bool moveOk;
                 if (_game.LastMoveError != MoveErrorType.Ok)
                 {
+                    moveOk = false;
                     MessageBox.Show(this, $"Move error: {_game.ToPlay.ToString()} cannot make move: {move}, " +
                         $"reason: {_game.LastMoveError.ToString()}");
                 }
                 else
                 {
+                    moveOk = true;
                     UpdateGameStatus();
                 }
 
                 _forceViewSet = false;
                 textBoxMove.Text = "";
                 Invalidate();
+                Update();
+
+                if (moveOk && !_game.Board.IsGameOver)
+                {
+                    var moves = _engine.SearchMoves(4);
+                    if (moves.Count > 0)
+                    {
+                        int r = _random.Next(0, moves.Count);
+                        MoveChoice mc = moves[r];
+                        _game.Move("comp", mc.MoveDescriptor);
+                        Invalidate();
+                    }
+                }
             }
+
+            buttonMove.Enabled = true;
         }
 
         private void UpdateGameStatus()

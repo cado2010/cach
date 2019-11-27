@@ -15,6 +15,14 @@ namespace cachCore.models
             Constrained = constrained;
         }
 
+        public bool IsEmpty
+        {
+            get
+            {
+                return Paths == null || Paths.Count == 0;
+            }
+        }
+
         /// <summary>
         /// Returns true if this movement includes the given position
         /// </summary>

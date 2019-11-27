@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25123.0
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.539
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cach", "cach\cach.csproj", "{61B8E085-B13D-4068-852A-2234919656E2}"
 EndProject
@@ -12,6 +12,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cachRendering", "cachRendering\cachRendering.csproj", "{562124BF-20A0-4BE0-8C67-5E173E86BF03}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cachBot", "cachBot\cachBot.csproj", "{6ACBD5FB-F19E-4758-8167-B41770DE297E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cacheEngine", "cacheEngine\cacheEngine.csproj", "{ECF38845-FFED-425D-B0FE-FDF319417F8E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cacheEngineTests", "cacheEngineTests\cacheEngineTests.csproj", "{689D3F43-DFE1-4CD7-BE5C-D12D7736DE95}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -105,8 +109,43 @@ Global
 		{6ACBD5FB-F19E-4758-8167-B41770DE297E}.Release|x64.Build.0 = Release|Any CPU
 		{6ACBD5FB-F19E-4758-8167-B41770DE297E}.Release|x86.ActiveCfg = Release|Any CPU
 		{6ACBD5FB-F19E-4758-8167-B41770DE297E}.Release|x86.Build.0 = Release|Any CPU
+		{ECF38845-FFED-425D-B0FE-FDF319417F8E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ECF38845-FFED-425D-B0FE-FDF319417F8E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ECF38845-FFED-425D-B0FE-FDF319417F8E}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{ECF38845-FFED-425D-B0FE-FDF319417F8E}.Debug|ARM.Build.0 = Debug|Any CPU
+		{ECF38845-FFED-425D-B0FE-FDF319417F8E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{ECF38845-FFED-425D-B0FE-FDF319417F8E}.Debug|x64.Build.0 = Debug|Any CPU
+		{ECF38845-FFED-425D-B0FE-FDF319417F8E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{ECF38845-FFED-425D-B0FE-FDF319417F8E}.Debug|x86.Build.0 = Debug|Any CPU
+		{ECF38845-FFED-425D-B0FE-FDF319417F8E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ECF38845-FFED-425D-B0FE-FDF319417F8E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ECF38845-FFED-425D-B0FE-FDF319417F8E}.Release|ARM.ActiveCfg = Release|Any CPU
+		{ECF38845-FFED-425D-B0FE-FDF319417F8E}.Release|ARM.Build.0 = Release|Any CPU
+		{ECF38845-FFED-425D-B0FE-FDF319417F8E}.Release|x64.ActiveCfg = Release|Any CPU
+		{ECF38845-FFED-425D-B0FE-FDF319417F8E}.Release|x64.Build.0 = Release|Any CPU
+		{ECF38845-FFED-425D-B0FE-FDF319417F8E}.Release|x86.ActiveCfg = Release|Any CPU
+		{ECF38845-FFED-425D-B0FE-FDF319417F8E}.Release|x86.Build.0 = Release|Any CPU
+		{689D3F43-DFE1-4CD7-BE5C-D12D7736DE95}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{689D3F43-DFE1-4CD7-BE5C-D12D7736DE95}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{689D3F43-DFE1-4CD7-BE5C-D12D7736DE95}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{689D3F43-DFE1-4CD7-BE5C-D12D7736DE95}.Debug|ARM.Build.0 = Debug|Any CPU
+		{689D3F43-DFE1-4CD7-BE5C-D12D7736DE95}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{689D3F43-DFE1-4CD7-BE5C-D12D7736DE95}.Debug|x64.Build.0 = Debug|Any CPU
+		{689D3F43-DFE1-4CD7-BE5C-D12D7736DE95}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{689D3F43-DFE1-4CD7-BE5C-D12D7736DE95}.Debug|x86.Build.0 = Debug|Any CPU
+		{689D3F43-DFE1-4CD7-BE5C-D12D7736DE95}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{689D3F43-DFE1-4CD7-BE5C-D12D7736DE95}.Release|Any CPU.Build.0 = Release|Any CPU
+		{689D3F43-DFE1-4CD7-BE5C-D12D7736DE95}.Release|ARM.ActiveCfg = Release|Any CPU
+		{689D3F43-DFE1-4CD7-BE5C-D12D7736DE95}.Release|ARM.Build.0 = Release|Any CPU
+		{689D3F43-DFE1-4CD7-BE5C-D12D7736DE95}.Release|x64.ActiveCfg = Release|Any CPU
+		{689D3F43-DFE1-4CD7-BE5C-D12D7736DE95}.Release|x64.Build.0 = Release|Any CPU
+		{689D3F43-DFE1-4CD7-BE5C-D12D7736DE95}.Release|x86.ActiveCfg = Release|Any CPU
+		{689D3F43-DFE1-4CD7-BE5C-D12D7736DE95}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6D3E083C-292F-49DB-A2F1-CFB690E96449}
 	EndGlobalSection
 EndGlobal

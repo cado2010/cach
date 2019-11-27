@@ -105,6 +105,10 @@
       <Project>{F0D17A4C-C611-49E3-A6E5-6663455BB239}</Project>
       <Name>cachCore</Name>
     </ProjectReference>
+    <ProjectReference Include="..\cacheEngine\cacheEngine.csproj">
+      <Project>{ECF38845-FFED-425D-B0FE-FDF319417F8E}</Project>
+      <Name>cacheEngine</Name>
+    </ProjectReference>
     <ProjectReference Include="..\cachRendering\cachRendering.csproj">
       <Project>{562124bf-20a0-4be0-8c67-5e173e86bf03}</Project>
       <Name>cachRendering</Name>

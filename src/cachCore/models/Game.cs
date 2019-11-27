@@ -44,11 +44,11 @@ namespace cachCore.models
 
         public ItemColor ToPlay { get { return _toPlay; } }
 
-        public void Move(string move)
+        public void Move(string move, MoveDescriptor inMd = null)
         {
             if (!_board.IsGameOver)
             {
-                LastMoveError = _board.Move(_toPlay, move);
+                LastMoveError = _board.Move(_toPlay, move, inMd);
                 if (_board.IsGameOver)
                 {
                     if (_board.IsCheckMate)

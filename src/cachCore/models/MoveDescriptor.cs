@@ -1,7 +1,8 @@
 ﻿using cachCore.enums;
 using cachCore.models;
+using System.Collections.Concurrent;
 
-namespace cachCore.utils
+namespace cachCore.models
 {
     /// <summary>
     /// Move descriptor created from move input string
@@ -52,6 +53,52 @@ namespace cachCore.utils
         /// If IsPromotion == true, then what Piece type player specified
         /// </summary>
         public PieceType PromotedPieceType { get; set; }
+
+        private static ConcurrentDictionary<PieceType, string> _pieceTypePrefix;
+        static MoveDescriptor()
+        {
+            _pieceTypePrefix = new ConcurrentDictionary<PieceType, string>();
+            _pieceTypePrefix.TryAdd(PieceType.King, "K");
+            _pieceTypePrefix.TryAdd(PieceType.Queen, "Q");
+            _pieceTypePrefix.TryAdd(PieceType.Rook, "R");
+            _pieceTypePrefix.TryAdd(PieceType.Bishop, "B");
+            _pieceTypePrefix.TryAdd(PieceType.Knight, "N");
+        }
+
+        public string MoveDescFromPosition
+        {
+            get
+            {
+                if (IsKingSideCastle)
+                    return "o-o";
+                else if (IsQueenSideCastle)
+                    return "o-o-o";
+                else if (IsResign)
+                    return "resign";
+
+                string moveDesc = "";
+                if (PieceType == PieceType.Pawn)
+                {
+                    if (IsKill)
+                    {
+                        moveDesc = StartPosition.ToAlgebraic()[0] + "x";
+                    }
+                    moveDesc += TargetPosition.ToAlgebraic();
+                }
+                else
+                {
+                    string prefix = _pieceTypePrefix[PieceType];
+                    moveDesc = prefix + (IsKill ? "x" : "") + TargetPosition.ToAlgebraic();
+                }
+
+                if (IsPromotion)
+                {
+                    moveDesc += "=" + _pieceTypePrefix[PromotedPieceType];
+                }
+
+                return moveDesc;
+            }
+        }
 
         //-------------------------------------------------------------------------------
         // Derived properties

@@ -328,8 +328,9 @@ namespace cachCore.models
         /// </summary>
         /// <param name="pieceColor"></param>
         /// <param name="move"></param>
+        /// <param name="inMd">optional MoveDescriptor generated for Engine play</param>
         /// <returns></returns>
-        public MoveErrorType Move(ItemColor pieceColor, string move)
+        public MoveErrorType Move(ItemColor pieceColor, string move, MoveDescriptor inMd = null)
         {
             if (IsGameOver)
             {
@@ -340,14 +341,21 @@ namespace cachCore.models
             {
                 MoveDescriptor md = null;
 
-                try
+                if (inMd != null)
                 {
-                    md = new MoveInputParser(pieceColor, move).MoveDescriptor;
+                    md = inMd;
                 }
-                catch(CachException ex)
+                else
                 {
-                    _logger.Error($"Move[{pieceColor}]: exception during parse: {ex.Message}, move: {move}", ex);
-                    return MoveErrorType.InvalidFormat;
+                    try
+                    {
+                        md = new MoveInputParser(pieceColor, move).MoveDescriptor;
+                    }
+                    catch (CachException ex)
+                    {
+                        _logger.Error($"Move[{pieceColor}]: exception during parse: {ex.Message}, move: {move}", ex);
+                        return MoveErrorType.InvalidFormat;
+                    }
                 }
 
                 if (!md.IsValid)
@@ -481,10 +489,16 @@ namespace cachCore.models
             return false;
         }
 
+        public void CheckGameStatus()
+        {
+            _CheckGameStatus();
+            _logger.Debug($"CheckGameStatus: IsGameOver={IsGameOver}, IsCheckMate={IsCheckMate}, IsStaleMate={IsStaleMate}, InCheck={InCheck}, PlayerInCheck={PlayerInCheck}");
+        }
+
         /// <summary>
         /// Checks and sets game status flags based on current board position
         /// </summary>
-        public void CheckGameStatus()
+        private void _CheckGameStatus()
         {
             // sanity of board
             IList<Piece> kings = GetActivePieces(ItemColor.White, PieceType.King);
@@ -500,6 +514,9 @@ namespace cachCore.models
             {
                 return;
             }
+
+            InCheck = false;
+            IsCheckMate = IsStaleMate = false;
 
             // either color in Mate
             var imHelper = new InMateHelper(this, ItemColor.Black);
@@ -531,8 +548,6 @@ namespace cachCore.models
                     return;
                 }
             }
-
-            InCheck = false;
 
             // TODO: optimize this - dont need to check both!
             var icHelper = new InCheckHelper(this, ItemColor.White);

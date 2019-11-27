@@ -3,6 +3,7 @@
 ################################################################################
 
 /src/.vs/cach/v14
+/src/.vs/cach/v15
 /src/cach/obj
 /src/cach/bin
 /src/cachCore/bin
@@ -14,3 +15,5 @@
 /src/cachRendering/obj
 /src/cachBot/bin
 /src/cachBot/obj
+bin/
+obj/
