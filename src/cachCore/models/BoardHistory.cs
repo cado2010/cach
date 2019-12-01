@@ -30,6 +30,8 @@ namespace cachCore.models
 
         public IList<BoardMove> Moves => _moveStack.ToList();
 
+        public string LastMove { get; private set; }
+
         /// <summary>
         /// Stores current position of the given piece
         /// </summary>
@@ -86,6 +88,8 @@ namespace cachCore.models
 
             // either color move advances move step number
             _moveStepNumber++;
+
+            LastMove = move;
         }
 
         /// <summary>
@@ -95,6 +99,8 @@ namespace cachCore.models
         public BoardHistoryItem Pop()
         {
             BoardHistoryItem hi = _boardHistoryStack.Pop();
+
+            LastMove = null;
 
             // if there are recorded moves for current board history, pop them too
             if (_moveStack.Count > 0)
@@ -107,6 +113,8 @@ namespace cachCore.models
                     // update current step numbers
                     _moveNumber = bm.MoveNumber;
                     _moveStepNumber = bm.MoveStepNumber;
+
+                    LastMove = bm.Move;
                 }
             }
 

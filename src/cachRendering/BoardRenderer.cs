@@ -88,9 +88,15 @@ namespace cachRendering
             Render(grc.Graphics, grc.Board, grc.ToPlay, grc.LeftUpperOffset, grc.TileSize, grc.BorderSize);
         }
 
-        private void PaintBoard(Graphics g, ItemColor toPlay, Point luOffset, int tileSize, int borderSize)
+        private void PaintBoard(Graphics g, ItemColor toPlay, Point luOffset, int tileSize, int borderSize, string lastMove)
         {
             Brush brush;
+
+            Position lastMovePosition = Position.Invalid;
+            if (lastMove != null)
+            {
+                lastMovePosition = Position.FromAlgebraic(lastMove.Substring(lastMove.Length - 2));
+            }
 
             // double for loop to handle all rows and columns
             for (var row = 0; row < GridSize; row++)
@@ -107,6 +113,9 @@ namespace cachRendering
                         brush = col % 2 != 0 ? Brushes.SaddleBrown : Brushes.SandyBrown;
                     else
                         brush = col % 2 != 0 ? Brushes.SandyBrown : Brushes.SaddleBrown;
+
+                    //if (col == lastMovePosition.Row && row == lastMovePosition.Column)
+                    //    brush = Brushes.Salmon;
 
                     g.FillRectangle(brush, loc.X, loc.Y, tileSize, tileSize);
                 }
@@ -142,7 +151,7 @@ namespace cachRendering
         private void Render(Graphics g, Board board, ItemColor toPlay, Point luOffset, int tileSize, int borderSize)
         {
             // render board
-            PaintBoard(g, toPlay, luOffset, tileSize, borderSize);
+            PaintBoard(g, toPlay, luOffset, tileSize, borderSize, board.LastMove);
 
             // render pieces
             float imgPerc = 1.0f;

@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Windows.Forms;
 using System.IO;
+using log4net;
 using cachCore.models;
 using cachCore.enums;
 using cachCore.controllers;
@@ -18,6 +19,7 @@ namespace cach
         private IBoardRenderer _boardRenderer;
         private Engine _engine;
         private Random _random;
+        private ILog _logger;
 
         const int tileSize = 80;
         const int gridSize = 8;
@@ -43,6 +45,8 @@ namespace cach
         {
             log4net.Config.XmlConfigurator.Configure();
             InitializeComponent();
+
+            _logger = LogManager.GetLogger(GetType().Name); 
         }
 
         private void Render(Graphics g, ItemColor toPlay)
@@ -107,8 +111,13 @@ namespace cach
                     {
                         int r = _random.Next(0, moves.Count);
                         MoveChoice mc = moves[r];
-                        _game.Move("comp", mc.MoveDescriptor);
+                        _logger.Info($"Engine move: {mc}");
+
+                        _game.Move($"{mc.MoveDescriptor.Move}", mc.MoveDescriptor);
                         Invalidate();
+
+                        string fen = new GameController().GetFEN(_game, ItemColor.White);
+                        _logger.Info($"FEN: {fen}");
                     }
                 }
             }
@@ -187,6 +196,11 @@ namespace cach
             _game.MoveUndo();
             UpdateGameStatus();
             Invalidate();
+        }
+
+        private void buttonDumpFEN_Click(object sender, EventArgs e)
+        {
+            textBoxMove.Text = new GameController().GetFEN(_game, ItemColor.White);
         }
     }
 }

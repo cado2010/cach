@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 using log4net;
 using cachCore.enums;
@@ -34,7 +35,7 @@ namespace cacheEngine
         /// <returns></returns>
         private IList<dynamic> GetAllPossibleNextMoves(ItemColor pieceColor)
         {
-            List<dynamic> pieceMovement = new List<dynamic>();
+            List<dynamic> moves = new List<dynamic>();
 
             IList<Piece> pieces = _board.GetAllActivePieces(pieceColor);
             foreach (var piece in pieces)
@@ -51,35 +52,50 @@ namespace cacheEngine
                         // iterate through all positions in a path
                         foreach (var position in path)
                         {
-                            pieceMovement.Add(new { Piece = piece, TargetPosition = position });
+                            moves.Add(new { Piece = piece, TargetPosition = position, IsKill = _board[position].IsOccupied() });
                         }
                     }
                 }
             }
 
-            return pieceMovement;
+            var sortedMoves = (from move in moves
+                               orderby move.IsKill descending
+                               select move).ToList();
+            // var sortedMoves = moves;
+
+            string msg = $"GetAllPossibleNextMoves({pieceColor}): ";
+            foreach (var move in sortedMoves)
+            {
+                MoveDescriptor md = CreateMoveDescriptor(move);
+                msg += $"{md.Move}, ";
+            }
+            _logger.Debug(msg);
+
+            return sortedMoves;
         }
 
         private MoveDescriptor CreateMoveDescriptor(dynamic move)
         {
             Piece piece = move.Piece;
-            Position targetPosition = move.TargetPosition;
 
-            return new MoveDescriptor()
+            MoveDescriptor md = new MoveDescriptor(piece)
             {
                 PieceColor = piece.PieceColor,
                 Move = "comp",
                 PieceType = piece.PieceType,
-                TargetPosition = targetPosition,
+                TargetPosition = move.TargetPosition,
                 StartPosition = piece.Position,
                 IsKingSideCastle = false,
                 IsQueenSideCastle = false,
-                IsKill = _board[targetPosition].IsOccupied(),
+                IsKill = move.IsKill,
                 IsDrawOffer = false,
                 IsResign = false,
                 IsPromotion = false,
                 PromotedPieceType = PieceType.Unknown
             };
+
+            md.Move = md.MoveDescFromPosition;
+            return md;
         }
 
         /// <summary>
@@ -87,45 +103,53 @@ namespace cacheEngine
         /// https://en.wikipedia.org/wiki/Alpha%E2%80%93beta_pruning
         /// </summary>
         /// <param name="depth"></param>
-        /// <param name="maxDepth"></param>
         /// <param name="alpha"></param>
         /// <param name="beta"></param>
         /// <param name="maximizingPlayer"></param>
         /// <returns></returns>
-        private MoveChoice AlphaBetaPruningSearch(int depth, int maxDepth, int alpha, int beta, bool maximizingPlayer,
+        private MoveChoice AlphaBetaPruningSearch(int depth, int alpha, int beta, bool maximizingPlayer,
             string currMovePath, IList<MoveChoice> searchMoves = null)
         {
             _logger.Debug($"ABPS: depth={depth}, alpha={alpha}, beta={beta}, maximizingPlayer={maximizingPlayer}");
 
-            if (depth == 0 || _board.IsCheckMate)
+            if (depth == 0 || _board.IsCheckMate || _board.IsStaleMate)
             {
                 int value = _boardEvaluator.Evaluate(_board, _enginePlayerColor);
-                _logger.Debug($"ABPS: depth0 - returning value={value}");
+
+                _logger.Info($"ABPS: depth={depth}, alpha={alpha}, beta={beta}, maximizingPlayer={maximizingPlayer}, returning value={value}, currMovePath={currMovePath}");
                 return new MoveChoice(null, null, value);
             }
 
             if (maximizingPlayer)
             {
                 int value = BoardEvaluator.MinVal;
+                int maxMcValue = BoardEvaluator.MinVal;
 
                 // get all possible nodes (moves) for Engine
                 IList<dynamic> moves = GetAllPossibleNextMoves(_enginePlayerColor);
 
                 MoveChoice mc = null;
-                MoveChoice maxMc = null;
                 MoveDescriptor md = null;
                 Piece piece = null;
                 string basePath = currMovePath;
 
+                bool foundOne = false;
+
                 foreach (var move in moves)
                 {
+                    if (alpha >= beta && !move.IsKill)
+                    {
+                        _logger.Info($"ABPS: depth={depth}, maxzer pruning exit: alpha={alpha}, beta={beta}, currMovePath={currMovePath}");
+                        break;
+                    }
+
                     // perform Board move
                     Piece prevPiece = piece;
                     MoveDescriptor prevMd = md;
 
                     piece = move.Piece;
                     md = CreateMoveDescriptor(move);
-                    string mvDesc = md.MoveDescFromPosition;
+                    string mvDesc = md.Move;
 
                     MoveErrorType err = _board.Move(_enginePlayerColor, mvDesc, md);
                     currMovePath = basePath + " -> " + _enginePlayerColor + ":" + mvDesc;
@@ -133,57 +157,76 @@ namespace cacheEngine
 
                     if (err != MoveErrorType.Ok)
                     {
-                        _logger.Debug($"ABPS: error in move={mvDesc}");
+                        _logger.Debug($"ABPS: error={err} in move={mvDesc}");
                         piece = prevPiece;
                         md = prevMd;
                         continue;
                     }
 
                     // recurse: deep search for the best possible move
-                    mc = AlphaBetaPruningSearch(depth - 1, maxDepth, alpha, beta, false, currMovePath);
-
+                    mc = AlphaBetaPruningSearch(depth - 1, alpha, beta, false, currMovePath);
                     if (mc == null)
                     {
-                        _logger.Debug($"ABPS: next level (maxzer to minzer dive) search returned null move");
-                        continue;
+                        _logger.Warn($"ABPS: next level (maxzer to minzer dive) search returned null move");
                     }
-
-                    if (mc.Value >= value)
+                    else
                     {
-                        value = mc.Value;
+                        value = Math.Max(value, mc.Value);
                         alpha = Math.Max(alpha, value);
-                        maxMc = new MoveChoice(piece, md, value);
 
+                        // top layer search moves list maintenance
                         if (searchMoves != null)
                         {
-                            searchMoves.Add(maxMc);
+                            _logger.Debug($"ABPS depth4 result: mcValue={mc.Value}, value={value}, alpha={alpha}, beta={beta}, currMovePath={currMovePath}");
+
+                            //if (mc.Value > maxMcValue)
+                            //{
+                            //    // clear any moves collected so far - new max found
+                            //    searchMoves.Clear();
+                            //}
+
+                            //if (mc.Value >= maxMcValue)
+                            //{
+                            //    maxMcValue = mc.Value;
+
+                            //    // store new max move
+                            //    MoveChoice maxMc = new MoveChoice(piece, md, maxMcValue);
+                            //    searchMoves.Add(maxMc);
+                            //}
+
+                            if (alpha > maxMcValue)
+                            {
+                                maxMcValue = alpha;
+
+                                searchMoves.Clear();
+
+                                // store new max move
+                                MoveChoice maxMc = new MoveChoice(piece, md, maxMcValue);
+                                searchMoves.Add(maxMc);
+
+                                foundOne = true;
+                            }
+                            else if (foundOne && mc.Value == maxMcValue)
+                            {
+                                // alternate move?
+                                MoveChoice maxMc = new MoveChoice(piece, md, mc.Value);
+                                searchMoves.Add(maxMc);
+                            }
                         }
                     }
 
                     // undo the move from this step
                     _board.MoveUndo();
 
-                    if (alpha >= beta)
-                        break;
+                    //if (alpha >= beta)
+                    //{
+                    //    _logger.Info($"ABPS: depth={depth}, maxzer pruning exit: alpha={alpha}, beta={beta}, currMovePath={currMovePath}");
+                    //    break;
+                    //}
                 }
 
-                // when depth == maxDepth for maximizing player, this is end of computation at the
-                // root - so create the right MoveChoice and not a dummy
-                if (depth == maxDepth)
-                {
-                    if (piece == null || md == null)
-                    {
-                        _logger.Debug($"ABPS: ERROR - no move????");
-                        // TODO: log error - no possible move?
-                        return null;
-                    }
-                    _logger.Debug($"ABPS: maximizing returning move: piece={piece.PieceType}, move={md.MoveDescFromPosition}, value={mc.Value}");
-                    return maxMc ?? new MoveChoice(piece, md, mc.Value);
-                }
-                else
-                {
-                    return mc;
-                }
+                _logger.Debug($"ABPS: depth={depth}, alpha={alpha}, beta={beta}, maxzer returning value = {value}");
+                return new MoveChoice(null, null, value);
             }
             else
             {
@@ -198,39 +241,50 @@ namespace cacheEngine
 
                 foreach (var move in moves)
                 {
+                    if (beta <= alpha && !move.IsKill)
+                    {
+                        _logger.Info($"ABPS: depth={depth}, minzer pruning exit: alpha={alpha}, beta={beta}, currMovePath={currMovePath}");
+                        break;
+                    }
+
                     // perform Board move
                     MoveDescriptor md = CreateMoveDescriptor(move);
-                    string mvDesc = md.MoveDescFromPosition;
+                    string mvDesc = md.Move;
 
-                    MoveErrorType err = _board.Move(_opponentColor, md.MoveDescFromPosition, md);
+                    MoveErrorType err = _board.Move(_opponentColor, md.Move, md);
                     currMovePath = basePath + " -> " + _opponentColor + ":" + mvDesc;
                     _logger.Debug($"ABPS: minimizing: depth={depth}, trying move={currMovePath}");
 
                     if (err != MoveErrorType.Ok)
                     {
-                        _logger.Debug($"ABPS: error in move={mvDesc}");
+                        _logger.Debug($"ABPS: error={err} in move={mvDesc}");
                         continue;
                     }
 
                     // recurse: deep search for the best possible move
-                    mc = AlphaBetaPruningSearch(depth - 1, maxDepth, alpha, beta, true, currMovePath);
+                    mc = AlphaBetaPruningSearch(depth - 1, alpha, beta, true, currMovePath);
                     if (mc == null)
                     {
-                        _logger.Debug($"ABPS: next level (minzer to maxzer dive) search returned null move");
-                        continue;
+                        _logger.Warn($"ABPS: next level (minzer to maxzer dive) search returned null move");
                     }
-
-                    value = Math.Min(value, mc.Value);
-                    beta = Math.Min(beta, value);
+                    else
+                    {
+                        value = Math.Min(value, mc.Value);
+                        beta = Math.Min(beta, value);
+                    }
 
                     // undo the move from this step
                     _board.MoveUndo();
 
-                    if (alpha >= beta)
-                        break;
+                    //if (beta <= alpha)
+                    //{
+                    //    _logger.Info($"ABPS: depth={depth}, minzer pruning exit: alpha={alpha}, beta={beta}, currMovePath={currMovePath}");
+                    //    break;
+                    //}
                 }
 
-                return mc;
+                _logger.Debug($"ABPS: depth={depth}, alpha={alpha}, beta={beta}, minzer returning value = {value}");
+                return new MoveChoice(null, null, value);
             }
         }
 
@@ -241,17 +295,18 @@ namespace cacheEngine
         /// <returns></returns>
         public IList<MoveChoice> SearchMoves(int depth)
         {
-            _logger.Debug($"SearchMoves: depth={depth}");
+            _logger.Info("----------------------------------------------------------------------");
+            _logger.Info($"SearchMoves: depth={depth}");
 
             List<MoveChoice> searchMoves = new List<MoveChoice>();
-            MoveChoice mc = AlphaBetaPruningSearch(depth, depth, BoardEvaluator.MinVal, BoardEvaluator.MaxVal, true, "", searchMoves);
-            _logger.Info($"Result move: {mc}");
+            MoveChoice mc = AlphaBetaPruningSearch(depth, BoardEvaluator.MinVal, BoardEvaluator.MaxVal, true, "", searchMoves);
+            // _logger.Info($"Result move: {mc}");
 
             List<MoveChoice> filteredMoves = new List<MoveChoice>();
             foreach (var move in searchMoves)
             {
                 _logger.Info($"SearchMove: {move}");
-                if (move.Value == mc.Value && mc.Piece.PieceType != PieceType.King)
+                if (move.Value == mc.Value && move.Piece.PieceType != PieceType.King)
                 {
                     filteredMoves.Add(move);
                 }

@@ -40,6 +40,7 @@
             this.checkBoxAlwaysCurrent = new System.Windows.Forms.CheckBox();
             this.buttonCreateBoard = new System.Windows.Forms.Button();
             this.buttonUndo = new System.Windows.Forms.Button();
+            this.buttonDumpFEN = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // label1
@@ -157,12 +158,23 @@
             this.buttonUndo.UseVisualStyleBackColor = true;
             this.buttonUndo.Click += new System.EventHandler(this.buttonUndo_Click);
             // 
+            // buttonDumpFEN
+            // 
+            this.buttonDumpFEN.Location = new System.Drawing.Point(254, 727);
+            this.buttonDumpFEN.Name = "buttonDumpFEN";
+            this.buttonDumpFEN.Size = new System.Drawing.Size(100, 23);
+            this.buttonDumpFEN.TabIndex = 4;
+            this.buttonDumpFEN.Text = "Dump FEN";
+            this.buttonDumpFEN.UseVisualStyleBackColor = true;
+            this.buttonDumpFEN.Click += new System.EventHandler(this.buttonDumpFEN_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(881, 780);
             this.Controls.Add(this.buttonUndo);
+            this.Controls.Add(this.buttonDumpFEN);
             this.Controls.Add(this.buttonCreateBoard);
             this.Controls.Add(this.checkBoxAlwaysCurrent);
             this.Controls.Add(this.buttonBlackView);
@@ -198,6 +210,7 @@
         private System.Windows.Forms.CheckBox checkBoxAlwaysCurrent;
         private System.Windows.Forms.Button buttonCreateBoard;
         private System.Windows.Forms.Button buttonUndo;
+        private System.Windows.Forms.Button buttonDumpFEN;
     }
 }
 

@@ -67,7 +67,7 @@ namespace cachCore.utils
             return board;
         }
 
-        public string BoardToFEN(Board board, ItemColor colorToMove)
+        public static string BoardToFEN(Board board, ItemColor colorToMove)
         {
             string fen = "";
 

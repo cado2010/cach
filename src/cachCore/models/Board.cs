@@ -464,7 +464,7 @@ namespace cachCore.models
                 md.StartPosition = startPosition;
                 MoveCommit(md, pieceToMove);
 
-                _logger.Debug($"Move[{pieceColor}]: valid move: {move}");
+                // _logger.Debug($"Move[{pieceColor}]: valid move: {move}");
                 return MoveErrorType.Ok;
             }
             catch (CachException ex)
@@ -492,7 +492,15 @@ namespace cachCore.models
         public void CheckGameStatus()
         {
             _CheckGameStatus();
-            _logger.Debug($"CheckGameStatus: IsGameOver={IsGameOver}, IsCheckMate={IsCheckMate}, IsStaleMate={IsStaleMate}, InCheck={InCheck}, PlayerInCheck={PlayerInCheck}");
+            // _logger.Debug($"CheckGameStatus: IsGameOver={IsGameOver}, IsCheckMate={IsCheckMate}, IsStaleMate={IsStaleMate}, InCheck={InCheck}, PlayerInCheck={PlayerInCheck}");
+        }
+
+        public string LastMove
+        {
+            get
+            {
+                return _boardHistory.LastMove;
+            }
         }
 
         /// <summary>
@@ -739,6 +747,11 @@ namespace cachCore.models
 
         private IList<Piece> GetMoveInputPieces(MoveDescriptor md)
         {
+            if (md.Piece != null)
+            {
+                return new List<Piece>() { md.Piece };
+            }
+
             IList<Piece> mipPieces;
 
             IList<Piece> pieces = GetActivePieces(md.PieceColor, md.PieceType);

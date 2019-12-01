@@ -1,5 +1,4 @@
 ﻿using cachCore.enums;
-using cachCore.models;
 using System.Collections.Concurrent;
 
 namespace cachCore.models
@@ -9,6 +8,8 @@ namespace cachCore.models
     /// </summary>
     public class MoveDescriptor
     {
+        public Piece Piece { get; private set; }
+
         public ItemColor PieceColor { get; set; }
 
         public string Move { get; set; }
@@ -63,6 +64,15 @@ namespace cachCore.models
             _pieceTypePrefix.TryAdd(PieceType.Rook, "R");
             _pieceTypePrefix.TryAdd(PieceType.Bishop, "B");
             _pieceTypePrefix.TryAdd(PieceType.Knight, "N");
+        }
+
+        public MoveDescriptor()
+        {
+        }
+
+        public MoveDescriptor(Piece piece) : this()
+        {
+            Piece = piece;
         }
 
         public string MoveDescFromPosition
