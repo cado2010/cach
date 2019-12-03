@@ -93,9 +93,21 @@ namespace cachRendering
             Brush brush;
 
             Position lastMovePosition = Position.Invalid;
+            int lmUiRow = Position.Invalid.Row;
+            int lmUiCol = Position.Invalid.Column;
             if (lastMove != null)
             {
-                lastMovePosition = Position.FromAlgebraic(lastMove.Substring(lastMove.Length - 2));
+                try
+                {
+                    lastMovePosition = Position.FromAlgebraic(lastMove.Substring(lastMove.Length - 2));
+                    lmUiRow = 7 - lastMovePosition.Row;
+                    lmUiCol = lastMovePosition.Column;
+                }
+                catch(Exception)
+                {
+                    lmUiRow = Position.Invalid.Row;
+                    lmUiCol = Position.Invalid.Column;
+                }
             }
 
             // double for loop to handle all rows and columns
@@ -106,7 +118,7 @@ namespace cachRendering
                     // create new Panel control which will be one 
                     // chess board tile
                     Size sz = new Size(tileSize, tileSize);
-                    Point loc = new Point(tileSize * row + luOffset.X + borderSize, tileSize * col + luOffset.Y + borderSize);
+                    Point loc = new Point(tileSize * col + luOffset.X + borderSize, tileSize * row + luOffset.Y + borderSize);
 
                     // color the backgrounds
                     if (row % 2 == 0)
@@ -114,8 +126,8 @@ namespace cachRendering
                     else
                         brush = col % 2 != 0 ? Brushes.SandyBrown : Brushes.SaddleBrown;
 
-                    //if (col == lastMovePosition.Row && row == lastMovePosition.Column)
-                    //    brush = Brushes.Salmon;
+                    if (col == lmUiCol && row == lmUiRow)
+                        brush = Brushes.Salmon;
 
                     g.FillRectangle(brush, loc.X, loc.Y, tileSize, tileSize);
                 }

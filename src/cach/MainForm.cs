@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Windows.Forms;
 using System.IO;
+using System.Collections.Generic;
 using log4net;
 using cachCore.models;
 using cachCore.enums;
@@ -101,6 +102,8 @@ namespace cach
 
                 _forceViewSet = false;
                 textBoxMove.Text = "";
+                PopulatePGN();
+
                 Invalidate();
                 Update();
 
@@ -118,11 +121,24 @@ namespace cach
 
                         string fen = new GameController().GetFEN(_game, ItemColor.White);
                         _logger.Info($"FEN: {fen}");
+
+                        PopulatePGN();
                     }
                 }
             }
 
             buttonMove.Enabled = true;
+        }
+
+        private void PopulatePGN()
+        {
+            listBoxPGN.Items.Clear();
+            IList<string> pgn = _game.Board.GetPGNList();
+
+            foreach (var move in pgn)
+            {
+                listBoxPGN.Items.Add(move);
+            }
         }
 
         private void UpdateGameStatus()
@@ -195,6 +211,8 @@ namespace cach
         {
             _game.MoveUndo();
             UpdateGameStatus();
+
+            PopulatePGN();
             Invalidate();
         }
 

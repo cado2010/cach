@@ -145,6 +145,32 @@ namespace cachCore.models
             return pgn;
         }
 
+        public IList<string> GetPGNList()
+        {
+            List<string> pgn = new List<string>();
+
+            if (_moveStack.Count > 0)
+            {
+                BoardMove[] moves = _moveStack.ToArray();
+                Array.Reverse(moves);
+                int moveNumber = 1;
+                for (int i = 0; i < moves.Length; i += 2, moveNumber++)
+                {
+                    string m = FixMove(moves[i].Move);
+                    string pgnItem = $"{moveNumber}. {m} ";
+                    if (i + 1 < moves.Length)
+                    {
+                        m = FixMove(moves[i + 1].Move);
+                        pgnItem += $"{m} ";
+                    }
+
+                    pgn.Add(pgnItem);
+                }
+            }
+
+            return pgn;
+        }
+
         public bool IsEmpty { get { return _boardHistoryStack.Count == 0; } }
 
         /// <summary>

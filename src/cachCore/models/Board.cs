@@ -492,7 +492,6 @@ namespace cachCore.models
         public void CheckGameStatus()
         {
             _CheckGameStatus();
-            // _logger.Debug($"CheckGameStatus: IsGameOver={IsGameOver}, IsCheckMate={IsCheckMate}, IsStaleMate={IsStaleMate}, InCheck={InCheck}, PlayerInCheck={PlayerInCheck}");
         }
 
         public string LastMove
@@ -575,6 +574,11 @@ namespace cachCore.models
         public string GetPGN()
         {
             return _boardHistory.GetPGN();
+        }
+
+        public IList<string> GetPGNList()
+        {
+            return _boardHistory.GetPGNList();
         }
 
         //-------------------------------------------------------------------------------

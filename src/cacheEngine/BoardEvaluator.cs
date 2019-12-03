@@ -17,11 +17,11 @@ namespace cacheEngine
         public BoardEvaluator()
         {
             _pieceValue = new Dictionary<PieceType, int>();
-            _pieceValue[PieceType.King] = 10000;
-            _pieceValue[PieceType.Queen] = 1000;
-            _pieceValue[PieceType.Rook] = 525;
-            _pieceValue[PieceType.Bishop] = 350;
-            _pieceValue[PieceType.Knight] = 350;
+            _pieceValue[PieceType.King] = 20000;
+            _pieceValue[PieceType.Queen] = 900;
+            _pieceValue[PieceType.Rook] = 500;
+            _pieceValue[PieceType.Bishop] = 330;
+            _pieceValue[PieceType.Knight] = 320;
             _pieceValue[PieceType.Pawn] = 100;
         }
 
@@ -42,9 +42,9 @@ namespace cacheEngine
             if (board.IsCheckMate)
             {
                 if (board.Winner == playerColor)
-                    boardVal = 20000;
+                    boardVal = 30000;
                 else
-                    boardVal = -20000;
+                    boardVal = -30000;
             }
 
             // TODO: better heuristics needed for computing the value of each piece
@@ -60,14 +60,14 @@ namespace cacheEngine
                 boardVal -= _pieceValue[piece.PieceType];
             }
 
-            //if (board.IsInCheck(playerColor))
-            //{
-            //    boardVal -= 5000;
-            //}
-            //else if (board.IsInCheck(opponentColor))
-            //{
-            //    boardVal += 5000;
-            //}
+            if (board.IsInCheck(playerColor))
+            {
+                boardVal -= 5000;
+            }
+            else if (board.IsInCheck(opponentColor))
+            {
+                boardVal += 5000;
+            }
 
             return boardVal;
         }

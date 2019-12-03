@@ -41,6 +41,7 @@
             this.buttonCreateBoard = new System.Windows.Forms.Button();
             this.buttonUndo = new System.Windows.Forms.Button();
             this.buttonDumpFEN = new System.Windows.Forms.Button();
+            this.listBoxPGN = new System.Windows.Forms.ListBox();
             this.SuspendLayout();
             // 
             // label1
@@ -168,11 +169,24 @@
             this.buttonDumpFEN.UseVisualStyleBackColor = true;
             this.buttonDumpFEN.Click += new System.EventHandler(this.buttonDumpFEN_Click);
             // 
+            // listBoxPGN
+            // 
+            this.listBoxPGN.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.listBoxPGN.Font = new System.Drawing.Font("Courier New", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.listBoxPGN.FormattingEnabled = true;
+            this.listBoxPGN.ItemHeight = 16;
+            this.listBoxPGN.Location = new System.Drawing.Point(692, 14);
+            this.listBoxPGN.Name = "listBoxPGN";
+            this.listBoxPGN.Size = new System.Drawing.Size(287, 756);
+            this.listBoxPGN.TabIndex = 6;
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(881, 780);
+            this.ClientSize = new System.Drawing.Size(991, 780);
+            this.Controls.Add(this.listBoxPGN);
             this.Controls.Add(this.buttonUndo);
             this.Controls.Add(this.buttonDumpFEN);
             this.Controls.Add(this.buttonCreateBoard);
@@ -211,6 +225,7 @@
         private System.Windows.Forms.Button buttonCreateBoard;
         private System.Windows.Forms.Button buttonUndo;
         private System.Windows.Forms.Button buttonDumpFEN;
+        private System.Windows.Forms.ListBox listBoxPGN;
     }
 }
 
