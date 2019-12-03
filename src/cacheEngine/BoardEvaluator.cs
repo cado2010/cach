@@ -14,6 +14,14 @@ namespace cacheEngine
 
         private Dictionary<PieceType, int> _pieceValue;
 
+        /// <summary>
+        /// Piece Square Table (PST) contains adjustment values based on position of Piece on the board:
+        /// map: ItemColor(White/Black) -> { map: PieceType -> int[8,8] array of adjustment values }
+        /// To use, the BoardEvaluator uses the Piece's position to lookup an adjustment number from the table
+        /// to add to the base value of a Piece
+        /// </summary>
+        private Dictionary<ItemColor, Dictionary<PieceType, int[,]>> _pieceSquareTable;
+
         public BoardEvaluator()
         {
             _pieceValue = new Dictionary<PieceType, int>();
@@ -23,6 +31,44 @@ namespace cacheEngine
             _pieceValue[PieceType.Bishop] = 330;
             _pieceValue[PieceType.Knight] = 320;
             _pieceValue[PieceType.Pawn] = 100;
+
+            CreatePST();
+        }
+
+        private void CreatePST()
+        {
+            _pieceSquareTable = new Dictionary<ItemColor, Dictionary<PieceType, int[,]>>()
+            {
+                {  ItemColor.Black, new Dictionary<PieceType, int[,]>() },
+                {  ItemColor.White, new Dictionary<PieceType, int[,]>() }
+            };
+
+            _pieceSquareTable[ItemColor.White][PieceType.Pawn] = new int[8, 8]
+            {
+                { 0,  0,  0,  0,  0,  0,  0,  0 },
+                { 5, 10, 10,-20,-20, 10, 10,  5 },
+                { 5, -5,-10,  0,  0,-10, -5,  5 },
+                { 0,  0,  0, 20, 20,  0,  0,  0 },
+                { 5,  5, 10, 25, 25, 10,  5,  5 },
+                { 10, 10, 20, 30, 30, 20, 10, 10 },
+                { 50, 50, 50, 50, 50, 50, 50, 50 },
+                { 0,  0,  0,  0,  0,  0,  0,  0 }
+            };
+
+            // PSTs for Black are the PSTs for White reflected on the X-axis
+            foreach (var pieceType in _pieceSquareTable[ItemColor.White].Keys)
+            {
+                int[,] pst = _pieceSquareTable[ItemColor.White][pieceType];
+                _pieceSquareTable[ItemColor.Black][pieceType] = new int[8, 8];
+                for (int r = 0; r < 8; r++)
+                {
+                    for (int c = 0; c < 8; c++)
+                    {
+                        _pieceSquareTable[ItemColor.Black][pieceType][r, c] =
+                            _pieceSquareTable[ItemColor.White][pieceType][7 - r, c];
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -54,22 +100,49 @@ namespace cacheEngine
             foreach (var piece in playerPieces)
             {
                 boardVal += _pieceValue[piece.PieceType];
+
+                // adjust based on PST
+                boardVal += LookupPST(piece);
             }
             foreach (var piece in opponentPieces)
             {
                 boardVal -= _pieceValue[piece.PieceType];
+
+                // adjust based on PST
+                boardVal -= LookupPST(piece);
             }
 
             if (board.IsInCheck(playerColor))
             {
-                boardVal -= 5000;
+                boardVal -= 450;
             }
             else if (board.IsInCheck(opponentColor))
             {
-                boardVal += 5000;
+                boardVal += 450;
             }
 
             return boardVal;
+        }
+
+        /// <summary>
+        /// Looks up the Piece Square Table (PST) to return an adjustment of piece value based on Piece Color, Type
+        /// and Position
+        /// </summary>
+        /// <param name="piece"></param>
+        /// <returns></returns>
+        private int LookupPST(Piece piece)
+        {
+            int pstAdj = 0;
+
+            if (piece.Position.IsValid && _pieceSquareTable.ContainsKey(piece.PieceColor))
+            {
+                if (_pieceSquareTable[piece.PieceColor].ContainsKey(piece.PieceType))
+                {
+                    pstAdj = _pieceSquareTable[piece.PieceColor][piece.PieceType][piece.Position.Row, piece.Position.Column];
+                }
+            }
+
+            return pstAdj;
         }
     }
 }
