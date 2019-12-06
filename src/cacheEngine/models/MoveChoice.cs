@@ -17,7 +17,7 @@ namespace cacheEngine.models
 
         public override string ToString()
         {
-            return $"MoveChoice: Color={Piece.PieceColor}, Piece={Piece.PieceType}, Move={MoveDescriptor.Move}, Value={Value}";
+            return $"MoveChoice: Color={MoveDescriptor.PieceColor}, Piece={MoveDescriptor.PieceType}, Move={MoveDescriptor.Move}, Value={Value}";
         }
     }
 }

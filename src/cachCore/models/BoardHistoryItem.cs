@@ -27,15 +27,19 @@ namespace cachCore.models
         public Position Position { get; private set; }
         public BoardStatus BoardStatus { get; private set; }
         public bool HasMoved { get; private set; }
+        public PieceType PieceType { get; private set; }
+        public ItemColor PieceColor { get; private set; }
 
         public PiecePositionHistoryItem(int moveNumber, int moveStepNumber,
-            string pieceId, Position position, bool hasMoved, BoardStatus boardStatus) :
+            string pieceId, Position position, bool hasMoved, BoardStatus boardStatus, PieceType pieceType, ItemColor pieceColor) :
             base(BoardHistoryType.PiecePosition, moveNumber, moveStepNumber)
         {
             PieceId = pieceId;
             Position = position;
             BoardStatus = boardStatus;
             HasMoved = hasMoved;
+            PieceType = pieceType;
+            PieceColor = pieceColor;
         }
     }
 

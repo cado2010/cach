@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using cachCore.enums;
 using cachCore.models;
@@ -13,6 +12,8 @@ namespace cacheEngine
         public static int MinVal = Int32.MinValue;
 
         private Dictionary<PieceType, int> _pieceValue;
+        private int _fullBoardVal;
+        private int _halfBoardVal;
 
         /// <summary>
         /// Piece Square Table (PST) contains adjustment values based on position of Piece on the board:
@@ -32,6 +33,14 @@ namespace cacheEngine
             _pieceValue[PieceType.Knight] = 320;
             _pieceValue[PieceType.Pawn] = 100;
 
+            _fullBoardVal = _pieceValue[PieceType.Queen] +
+                _pieceValue[PieceType.Rook] * 2 +
+                _pieceValue[PieceType.Bishop] * 2 +
+                _pieceValue[PieceType.Knight] * 2 +
+                _pieceValue[PieceType.Pawn] * 8;
+
+            _halfBoardVal = _fullBoardVal / 2;
+
             CreatePST();
         }
 
@@ -43,7 +52,7 @@ namespace cacheEngine
                 {  ItemColor.White, new Dictionary<PieceType, int[,]>() }
             };
 
-            _pieceSquareTable[ItemColor.White][PieceType.Pawn] = new int[8, 8]
+            _pieceSquareTable[ItemColor.White][PieceType.Pawn] = new int[,]
             {
                 { 0,  0,  0,  0,  0,  0,  0,  0 },
                 { 5, 10, 10,-20,-20, 10, 10,  5 },
@@ -52,7 +61,67 @@ namespace cacheEngine
                 { 5,  5, 10, 25, 25, 10,  5,  5 },
                 { 10, 10, 20, 30, 30, 20, 10, 10 },
                 { 50, 50, 50, 50, 50, 50, 50, 50 },
+                { 70, 70, 70, 70, 70, 70, 70, 70 }
+            };
+
+            _pieceSquareTable[ItemColor.White][PieceType.Knight] = new int[,]
+            {
+                { -50,-40,-30,-30,-30,-30,-40,-50 },
+                { -40,-20,  0,  5,  5,  0,-20,-40 },
+                { -30,  5, 10, 15, 15, 10,  5,-30 },
+                { -30,  0, 15, 20, 20, 15,  0,-30 },
+                { -30,  5, 15, 20, 20, 15,  5,-30 },
+                { -30,  0, 10, 15, 15, 10,  0,-30 },
+                { -40,-20,  0,  0,  0,  0,-20,-40 },
+                { -50,-40,-30,-30,-30,-30,-40,-50 }
+            };
+
+            _pieceSquareTable[ItemColor.White][PieceType.Bishop] = new int[,]
+            {
+                { -20,-10,-10,-10,-10,-10,-10,-20 },
+                { -10,  5,  0,  0,  0,  0,  5,-10 },
+                { -10, 10, 10, 10, 10, 10, 10,-10 },
+                { -10,  0, 10, 10, 10, 10,  0,-10 },
+                { -10,  5,  5, 10, 10,  5,  5,-10 },
+                { -10,  0,  5, 10, 10,  5,  0,-10 },
+                { -10,  0,  0,  0,  0,  0,  0,-10 },
+                { -20,-10,-10,-10,-10,-10,-10,-20 }
+            };
+
+            _pieceSquareTable[ItemColor.White][PieceType.Rook] = new int[,]
+            {
+                { 0,  0,  0,  5,  5,  0,  0,  0 },
+                { -5,  0,  0,  0,  0,  0,  0, -5 },
+                { -5,  0,  0,  0,  0,  0,  0, -5 },
+                { -5,  0,  0,  0,  0,  0,  0, -5 },
+                { -5,  0,  0,  0,  0,  0,  0, -5 },
+                { -5,  0,  0,  0,  0,  0,  0, -5 },
+                { 5, 10, 10, 10, 10, 10, 10,  5 },
                 { 0,  0,  0,  0,  0,  0,  0,  0 }
+            };
+
+            _pieceSquareTable[ItemColor.White][PieceType.Queen] = new int[,]
+            {
+                { -20,-10,-10, -5, -5,-10,-10,-20 },
+                { -10,  0,  5,  0,  0,  0,  0,-10 },
+                { -10,  5,  5,  5,  5,  5,  0,-10 },
+                { 0,  0,  5,  5,  5,  5,  0, -5 },
+                { -5,  0,  5,  5,  5,  5,  0, -5 },
+                { -10,  0,  5,  5,  5,  5,  0,-10 },
+                { -10,  0,  0,  0,  0,  0,  0,-10 },
+                { -20,-10,-10, -5, -5,-10,-10,-20 }
+            };
+
+            _pieceSquareTable[ItemColor.White][PieceType.King] = new int[,]
+            {
+                { -50,-30,-30,-30,-30,-30,-30,-50 },
+                { -30,-30,  0,  0,  0,  0,-30,-30 },
+                { -30,-10, 20, 30, 30, 20,-10,-30 },
+                { -30,-10, 30, 40, 40, 30,-10,-30 },
+                { -30,-10, 30, 40, 40, 30,-10,-30 },
+                { -30,-10, 20, 30, 30, 20,-10,-30 },
+                { -30,-20,-10,  0,  0,-10,-20,-30 },
+                { -50,-40,-30,-20,-20,-30,-40,-50 }
             };
 
             // PSTs for Black are the PSTs for White reflected on the X-axis
@@ -143,6 +212,43 @@ namespace cacheEngine
             }
 
             return pstAdj;
+        }
+
+        /// <summary>
+        /// Its deemed "Middle Game" if it appears to satisfy the move count and we're definitely not in
+        /// End Game
+        /// </summary>
+        /// <param name="board"></param>
+        /// <returns></returns>
+        public bool IsMiddleGame(Board board)
+        {
+            return board.IsMiddleGameLike() && !IsEndGame(board);
+        }
+
+        /// <summary>
+        /// Heuristics to determine if we are past middle game - this is computed purely on amount of material left
+        /// </summary>
+        /// <param name="board"></param>
+        /// <returns></returns>
+        public bool IsEndGame(Board board)
+        {
+            IList<Piece> whitePieces = board.GetAllActivePieces(ItemColor.White);
+            IList<Piece> blackPieces = board.GetAllActivePieces(ItemColor.Black);
+
+            int whiteVal = 0;
+            foreach (var piece in whitePieces)
+            {
+                whiteVal += _pieceValue[piece.PieceType];
+            }
+            int blackVal = 0;
+            foreach (var piece in blackPieces)
+            {
+                blackVal += _pieceValue[piece.PieceType];
+            }
+
+            int lowVal = (int)(((float)_fullBoardVal) * 0.375f);
+
+            return (whiteVal < lowVal && blackVal < _halfBoardVal) || (blackVal < lowVal && whiteVal < _halfBoardVal);
         }
     }
 }

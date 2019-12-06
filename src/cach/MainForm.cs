@@ -44,7 +44,7 @@ namespace cach
 
         public MainForm()
         {
-            log4net.Config.XmlConfigurator.Configure();
+            // log4net.Config.XmlConfigurator.Configure();
             InitializeComponent();
 
             _logger = LogManager.GetLogger(GetType().Name); 
@@ -80,54 +80,63 @@ namespace cach
 
         private void buttonMove_Click(object sender, EventArgs e)
         {
-            buttonMove.Enabled = false;
-
-            string move = textBoxMove.Text.Trim();
-            if (move != "")
+            try
             {
-                _game.Move(move);
+                buttonMove.Enabled = false;
 
-                bool moveOk;
-                if (_game.LastMoveError != MoveErrorType.Ok)
+                string move = textBoxMove.Text.Trim();
+                if (move != "")
                 {
-                    moveOk = false;
-                    MessageBox.Show(this, $"Move error: {_game.ToPlay.ToString()} cannot make move: {move}, " +
-                        $"reason: {_game.LastMoveError.ToString()}");
-                }
-                else
-                {
-                    moveOk = true;
-                    UpdateGameStatus();
-                }
+                    _game.Move(move);
 
-                _forceViewSet = false;
-                textBoxMove.Text = "";
-                PopulatePGN();
-
-                Invalidate();
-                Update();
-
-                if (moveOk && !_game.Board.IsGameOver)
-                {
-                    var moves = _engine.SearchMoves(4);
-                    if (moves.Count > 0)
+                    bool moveOk;
+                    if (_game.LastMoveError != MoveErrorType.Ok)
                     {
-                        int r = _random.Next(0, moves.Count);
-                        MoveChoice mc = moves[r];
-                        _logger.Info($"Engine move: {mc}");
+                        moveOk = false;
+                        MessageBox.Show(this, $"Move error: {_game.ToPlay.ToString()} cannot make move: {move}, " +
+                            $"reason: {_game.LastMoveError.ToString()}");
+                    }
+                    else
+                    {
+                        moveOk = true;
+                        UpdateGameStatus();
+                    }
 
-                        _game.Move($"{mc.MoveDescriptor.Move}", mc.MoveDescriptor);
-                        Invalidate();
+                    _forceViewSet = false;
+                    textBoxMove.Text = "";
+                    PopulatePGN();
 
-                        string fen = new GameController().GetFEN(_game, ItemColor.White);
-                        _logger.Info($"FEN: {fen}");
+                    Invalidate();
+                    Update();
 
-                        PopulatePGN();
+                    if (moveOk && !_game.Board.IsGameOver)
+                    {
+                        var moves = _engine.SearchMoves(4);
+                        if (moves.Count > 0)
+                        {
+                            int r = _random.Next(0, moves.Count);
+                            MoveChoice mc = moves[r];
+                            _logger.Info($"Engine move: {mc}");
+
+                            _game.Move($"{mc.MoveDescriptor.Move}", mc.MoveDescriptor);
+                            Invalidate();
+
+                            string fen = new GameController().GetFEN(_game, ItemColor.White);
+                            _logger.Info($"FEN: {fen}");
+
+                            PopulatePGN();
+                        }
                     }
                 }
-            }
 
-            buttonMove.Enabled = true;
+                textBoxMove.Focus();
+                buttonMove.Enabled = true;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"buttonMove_Click: Exception: {ex.Message}", ex);
+                throw ex;
+            }
         }
 
         private void PopulatePGN()

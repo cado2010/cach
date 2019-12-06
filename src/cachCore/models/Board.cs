@@ -502,6 +502,11 @@ namespace cachCore.models
             }
         }
 
+        public bool IsMiddleGameLike()
+        {
+            return _boardHistory.IsMiddleGameLike();
+        }
+
         /// <summary>
         /// Checks and sets game status flags based on current board position
         /// </summary>
@@ -579,6 +584,11 @@ namespace cachCore.models
         public IList<string> GetPGNList()
         {
             return _boardHistory.GetPGNList();
+        }
+
+        public bool Castled(ItemColor playerColor)
+        {
+            return _boardHistory.Castled(playerColor);
         }
 
         //-------------------------------------------------------------------------------

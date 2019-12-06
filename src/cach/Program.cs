@@ -1,22 +1,32 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows.Forms;
+using log4net;
 
 namespace cach
 {
     static class Program
     {
+        private static ILog _logger;
+
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
         static void Main()
         {
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new MainForm());
+            log4net.Config.XmlConfigurator.Configure();
+            _logger = LogManager.GetLogger(typeof(Program).Name);
+
+            try
+            {
+                Application.EnableVisualStyles();
+                Application.SetCompatibleTextRenderingDefault(false);
+                Application.Run(new MainForm());
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Exception: {ex.Message}", ex);
+            }
         }
     }
 }

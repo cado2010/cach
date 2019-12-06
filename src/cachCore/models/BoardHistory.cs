@@ -39,7 +39,7 @@ namespace cachCore.models
         public void PushPosition(Piece piece, BoardStatus boardStatus)
         {
             BoardHistoryItem hi = new PiecePositionHistoryItem(_moveNumber, _moveStepNumber,
-                piece.Id, piece.Position, piece.HasMoved, boardStatus);
+                piece.Id, piece.Position, piece.HasMoved, boardStatus, piece.PieceType, piece.PieceColor);
             _boardHistoryStack.Push(hi);
         }
 
@@ -172,6 +172,63 @@ namespace cachCore.models
         }
 
         public bool IsEmpty { get { return _boardHistoryStack.Count == 0; } }
+
+        /// <summary>
+        /// Returns true if player of given color has castled
+        /// </summary>
+        /// <param name="playerColor"></param>
+        /// <returns></returns>
+        public bool Castled(ItemColor playerColor)
+        {
+            bool castled = false;
+            foreach (var move in _moveStack)
+            {
+                if (move.PieceColor == playerColor && (move.Move == "o-o" || move.Move == "o-o-o"))
+                {
+                    castled = true;
+                    break;
+                }
+            }
+
+            return castled;
+        }
+
+        /// <summary>
+        /// Heuristics to determine if we appear to be in middle game -
+        /// defined as: 
+        /// At least 3 of the minor pieces have moved on each side and additionally
+        /// 4+ pawn moves made
+        /// </summary>
+        /// <returns></returns>
+        public bool IsMiddleGameLike()
+        {
+            int wMinorMoves = 0, bMinorMoves = 0;
+            int wPawnMoves = 0, bPawnMoves = 0;
+
+            foreach (var bhi in _boardHistoryStack)
+            {
+                if (bhi.Type == BoardHistoryType.PiecePosition)
+                {
+                    PiecePositionHistoryItem pphi = bhi as PiecePositionHistoryItem;
+                    if (pphi.PieceType == PieceType.Bishop || pphi.PieceType == PieceType.Knight)
+                    {
+                        if (pphi.PieceColor == ItemColor.White)
+                            wMinorMoves++;
+                        else if (pphi.PieceColor == ItemColor.Black)
+                            bMinorMoves++;
+                    }
+                    else if (pphi.PieceType == PieceType.Pawn)
+                    {
+                        if (pphi.PieceColor == ItemColor.White)
+                            wPawnMoves++;
+                        else if (pphi.PieceColor == ItemColor.Black)
+                            bPawnMoves++;
+                    }
+                }
+            }
+
+            return wMinorMoves >= 2 && bMinorMoves >= 2 && wPawnMoves >= 3 && bPawnMoves >= 3;
+        }
 
         /// <summary>
         /// Stack level / current stack top MoveStepNumber - used when multiple items need to be popped for one step
