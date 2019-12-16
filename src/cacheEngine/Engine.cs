@@ -6,6 +6,8 @@ using cachCore.enums;
 using cachCore.models;
 using cachCore.utils;
 using cacheEngine.models;
+using openingBook;
+using openingBook.models;
 
 namespace cacheEngine
 {
@@ -15,6 +17,10 @@ namespace cacheEngine
         private BoardEvaluator _boardEvaluator;
         private ItemColor _enginePlayerColor;
         private ItemColor _opponentColor;
+
+        private bool _useOpeningBook;
+        private OpeningBookNode _root;
+        private OpeningBookSearch _obSearch;
 
         private ILog _logger;
 
@@ -27,13 +33,22 @@ namespace cacheEngine
             public bool IsQueenSideCastle { get; set; }
         }
 
-        public Engine(Board board, ItemColor enginePlayerColor)
+        public Engine(Board board, ItemColor enginePlayerColor, bool useOpeningBook = true)
         {
             _board = board;
             _enginePlayerColor = enginePlayerColor;
             _opponentColor = BoardUtils.GetOtherColor(enginePlayerColor);
             _boardEvaluator = new BoardEvaluator();
             _logger = LogManager.GetLogger(GetType().Name);
+
+            _useOpeningBook = useOpeningBook;
+            if (_useOpeningBook)
+            {
+                OpeningBookBuilder obb = new OpeningBookBuilder();
+                obb.Read("cach_openingbook.txt");
+                _root = obb.Root;
+                _obSearch = new OpeningBookSearch(_root);
+            }
         }
 
 
@@ -46,6 +61,17 @@ namespace cacheEngine
         {
             _logger.Info("----------------------------------------------------------------------");
             _logger.Info($"SearchMoves: depth={depth}");
+
+            if (_useOpeningBook)
+            {
+                // try Opening Book
+                IList<string> obMoves = _obSearch.SearchMoves(_board.GetRawPGNList());
+                if (obMoves != null && obMoves.Count > 0)
+                {
+                    // Opening Book moves as MoveChoice's
+                    return obMoves.Select(x => new MoveChoice(null, null, 0, x, true)).ToList();
+                }
+            }
 
             List<MoveChoice> searchMoves = new List<MoveChoice>();
             MoveChoice mc = AlphaBetaPruningSearch(depth, BoardEvaluator.MinVal, BoardEvaluator.MaxVal, true, "", searchMoves);

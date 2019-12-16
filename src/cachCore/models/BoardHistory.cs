@@ -171,6 +171,20 @@ namespace cachCore.models
             return pgn;
         }
 
+        public IList<string> GetRawPGNList()
+        {
+            List<string> pgn = new List<string>();
+
+            if (_moveStack.Count > 0)
+            {
+                IList<BoardMove> moves = _moveStack.ToList();
+                moves.Reverse();
+                return moves.Select(x => x.Move).ToList();
+            }
+
+            return pgn;
+        }
+
         public bool IsEmpty { get { return _boardHistoryStack.Count == 0; } }
 
         /// <summary>

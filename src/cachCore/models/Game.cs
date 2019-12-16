@@ -105,7 +105,7 @@ namespace cachCore.models
         private void LoadPGN(string pgn)
         {
             PGNParser parser = new PGNParser(pgn);
-            foreach (var m in parser.Moves)
+            foreach (var m in parser.Plies)
             {
                 Move(m);
             }

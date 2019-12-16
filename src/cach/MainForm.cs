@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
-using System.IO;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using log4net;
 using cachCore.models;
 using cachCore.enums;
@@ -11,6 +12,7 @@ using cachRendering.models;
 using cachRendering;
 using cacheEngine;
 using cacheEngine.models;
+using cachCore.utils;
 
 namespace cach
 {
@@ -22,8 +24,12 @@ namespace cach
         private Random _random;
         private ILog _logger;
 
+        private bool _highlitePosition;
+        private Position _hlPosition;
+
         const int tileSize = 80;
         const int gridSize = 8;
+        const int BorderSize = 20;
 
         // event handler of Form Load... init things here
         private void MainForm_Load(object sender, EventArgs e)
@@ -33,7 +39,25 @@ namespace cach
 
             _game = new GameController().CreateGame();
             _boardRenderer = new BoardRenderer();
+
+            new Thread(new ThreadStart(delegate
+            {
+                var w = new Form() { Size = new Size(0, 0) };
+                Task.Delay(TimeSpan.FromSeconds(15))
+                    .ContinueWith((t) => {
+                        w.Close();
+                    }, TaskScheduler.FromCurrentSynchronizationContext());
+
+                MessageBox.Show(w,
+                  "Please wait, loading Opening Book ...",
+                  "Wait",
+                  MessageBoxButtons.OK,
+                  MessageBoxIcon.Information
+                );
+            })).Start();
+
             _engine = new Engine(_game.Board, ItemColor.Black);
+
             _random = new Random();
 
             labelNextToMove.Text = _game.ToPlay.ToString();
@@ -58,8 +82,9 @@ namespace cach
                 Graphics = g,
                 LeftUpperOffset = new Point(0, 0),
                 TileSize = Resource1.bK.Size.Width + 20,
-                BorderSize = 20,
-                ToPlay = toPlay
+                BorderSize = BorderSize,
+                ToPlay = toPlay,
+                HighlitePosition = _highlitePosition ? _hlPosition : Position.Invalid
             };
             _boardRenderer.Render(grc);
 
@@ -67,8 +92,8 @@ namespace cach
             grc.TileSize = 30;
             grc.BorderSize = 16;
 
-            MemoryStream memStream = new MemoryStream();
-            _boardRenderer.RenderAsImage(grc, memStream);
+            // MemoryStream memStream = new MemoryStream();
+            // _boardRenderer.RenderAsImage(grc, memStream);
         }
 
         private void MainForm_Paint(object sender, PaintEventArgs e)
@@ -118,7 +143,15 @@ namespace cach
                             MoveChoice mc = moves[r];
                             _logger.Info($"Engine move: {mc}");
 
-                            _game.Move($"{mc.MoveDescriptor.Move}", mc.MoveDescriptor);
+                            if (mc.FromOpeningBook)
+                            {
+                                _game.Move(mc.Move);
+                            }
+                            else
+                            {
+                                _game.Move($"{mc.MoveDescriptor.Move}", mc.MoveDescriptor);
+                            }
+
                             Invalidate();
 
                             string fen = new GameController().GetFEN(_game, ItemColor.White);
@@ -228,6 +261,93 @@ namespace cach
         private void buttonDumpFEN_Click(object sender, EventArgs e)
         {
             textBoxMove.Text = new GameController().GetFEN(_game, ItemColor.White);
+        }
+
+        private Position GetPositionFromCoord(int x, int y)
+        {
+            Position pos = Position.Invalid;
+
+            int tileSize = Resource1.bK.Size.Width + 20;
+            if (x >= BorderSize && y >= BorderSize &&
+                x < BorderSize + 8 * tileSize &&
+                y < BorderSize + 8 * tileSize)
+            {
+                pos = new Position(7 - (y - BorderSize) / tileSize, (x - BorderSize) / tileSize);
+            }
+
+            return pos;
+        }
+
+        private void SelectPiece(Position pos)
+        {
+            _highlitePosition = true;
+            _hlPosition = pos;
+
+            Invalidate();
+        }
+
+        private bool IsKingSideCastle(Piece piece, Position moveTo)
+        {
+            return piece.PieceType == PieceType.King &&
+                piece.Position.Column == 4 && moveTo.Column == 6;
+
+        }
+
+        private bool IsQueenSideCastle(Piece piece, Position moveTo)
+        {
+            return piece.PieceType == PieceType.King &&
+                piece.Position.Column == 4 && moveTo.Column == 2;
+        }
+
+        private void MovePiece(Position moveTo)
+        {
+            ItemColor otherColor = BoardUtils.GetOtherColor(_game.ToPlay);
+            bool isKill = _game.Board[moveTo].IsOccupiedByPieceOfColor(otherColor);
+
+            Piece piece = _game.Board[_hlPosition].Piece;
+            MoveDescriptor md = new MoveDescriptor(piece)
+            {
+                PieceColor = _game.ToPlay,
+                Move = "comp",
+                PieceType = piece != null ? piece.PieceType : PieceType.King,
+                TargetPosition = moveTo,
+                StartPosition = _hlPosition,
+                IsKingSideCastle = IsKingSideCastle(piece, moveTo),
+                IsQueenSideCastle = IsQueenSideCastle(piece, moveTo),
+                IsKill = isKill,
+                IsDrawOffer = false,
+                IsResign = false,
+                IsPromotion = false, // TODO
+                PromotedPieceType = PieceType.Unknown // TODO
+            };
+            md.Move = md.MoveDescFromPosition;
+
+            // set the move text and fire the Move button click
+            textBoxMove.Text = md.MoveDescFromPosition;
+            buttonMove_Click(null, null);
+        }
+
+        private void MainForm_Click(object sender, EventArgs e)
+        {
+            MouseEventArgs me = e as MouseEventArgs;
+            if (me != null)
+            {
+                Position pos = GetPositionFromCoord(me.X, me.Y);
+                if (pos.IsValid)
+                {
+                    if (_game.Board[pos].IsOccupiedByPieceOfColor(_game.ToPlay))
+                    {
+                        SelectPiece(pos);
+                    }
+                    else if (_highlitePosition)
+                    {
+                        MovePiece(pos);
+
+                        _highlitePosition = false;
+                        _hlPosition = Position.Invalid;
+                    }
+                }
+            }
         }
     }
 }

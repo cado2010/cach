@@ -15,6 +15,9 @@ namespace cachRendering
 
         private static Dictionary<ItemColor, Dictionary<PieceType, Image>> _pieceImageMap;
 
+        private Pen _outlinePen;
+        private Pen _lastMovePen;
+
         static BoardRenderer()
         {
             _pieceImageMap = new Dictionary<ItemColor, Dictionary<PieceType, Image>>()
@@ -48,6 +51,8 @@ namespace cachRendering
 
         public BoardRenderer()
         {
+            _outlinePen = new Pen(Pens.Azure.Color, 4);
+            _lastMovePen = new Pen(Pens.LightSeaGreen.Color, 4);
         }
 
         public bool RenderAsImage(IRenderContext renderContext, MemoryStream memStream)
@@ -63,7 +68,8 @@ namespace cachRendering
 
                         Render(g, renderContext.Board, renderContext.ToPlay,
                             renderContext.LeftUpperOffset,
-                            renderContext.TileSize, renderContext.BorderSize);
+                            renderContext.TileSize, renderContext.BorderSize,
+                            Position.Invalid);
                     }
 
                     memStream.Seek(0, SeekOrigin.Begin);
@@ -85,10 +91,10 @@ namespace cachRendering
         public void Render(IRenderContext renderContext)
         {
             GraphicsRenderContext grc = renderContext as GraphicsRenderContext;
-            Render(grc.Graphics, grc.Board, grc.ToPlay, grc.LeftUpperOffset, grc.TileSize, grc.BorderSize);
+            Render(grc.Graphics, grc.Board, grc.ToPlay, grc.LeftUpperOffset, grc.TileSize, grc.BorderSize, grc.HighlitePosition);
         }
 
-        private void PaintBoard(Graphics g, ItemColor toPlay, Point luOffset, int tileSize, int borderSize, string lastMove)
+        private void PaintBoard(Graphics g, ItemColor toPlay, Point luOffset, int tileSize, int borderSize, string lastMove, Position highlitePosition)
         {
             Brush brush;
 
@@ -126,11 +132,21 @@ namespace cachRendering
                     else
                         brush = col % 2 != 0 ? Brushes.SandyBrown : Brushes.SaddleBrown;
 
-                    if (col == lmUiCol && row == lmUiRow)
-                        brush = Brushes.Salmon;
-
                     g.FillRectangle(brush, loc.X, loc.Y, tileSize, tileSize);
+
+                    if (col == lmUiCol && row == lmUiRow)
+                    {
+                        // brush = Brushes.Salmon;
+                        g.DrawRectangle(_lastMovePen, loc.X, loc.Y, tileSize, tileSize);
+                    }
                 }
+            }
+
+            if (highlitePosition.IsValid)
+            {
+                Point loc = new Point(tileSize * highlitePosition.Column + luOffset.X + borderSize,
+                    tileSize * (7 - highlitePosition.Row) + luOffset.Y + borderSize);
+                g.DrawRectangle(_outlinePen, loc.X, loc.Y, tileSize, tileSize);
             }
 
             Font font = SystemFonts.DefaultFont;
@@ -160,10 +176,10 @@ namespace cachRendering
             }
         }
 
-        private void Render(Graphics g, Board board, ItemColor toPlay, Point luOffset, int tileSize, int borderSize)
+        private void Render(Graphics g, Board board, ItemColor toPlay, Point luOffset, int tileSize, int borderSize, Position highlitePosition)
         {
             // render board
-            PaintBoard(g, toPlay, luOffset, tileSize, borderSize, board.LastMove);
+            PaintBoard(g, toPlay, luOffset, tileSize, borderSize, board.LastMove, highlitePosition);
 
             // render pieces
             float imgPerc = 1.0f;

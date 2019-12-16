@@ -586,6 +586,11 @@ namespace cachCore.models
             return _boardHistory.GetPGNList();
         }
 
+        public IList<string> GetRawPGNList()
+        {
+            return _boardHistory.GetRawPGNList();
+        }
+
         public bool Castled(ItemColor playerColor)
         {
             return _boardHistory.Castled(playerColor);

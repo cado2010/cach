@@ -204,6 +204,7 @@
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Cach";
             this.Load += new System.EventHandler(this.MainForm_Load);
+            this.Click += new System.EventHandler(this.MainForm_Click);
             this.Paint += new System.Windows.Forms.PaintEventHandler(this.MainForm_Paint);
             this.ResumeLayout(false);
             this.PerformLayout();

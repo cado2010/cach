@@ -98,7 +98,8 @@ namespace cachCore.models
                 else
                 {
                     string prefix = _pieceTypePrefix[PieceType];
-                    moveDesc = prefix + (IsKill ? "x" : "") + TargetPosition.ToAlgebraic();
+                    moveDesc = prefix + (StartPosition.IsValid ? StartPosition.ToAlgebraic() : "") +
+                        (IsKill ? "x" : "") + TargetPosition.ToAlgebraic();
                 }
 
                 if (IsPromotion)

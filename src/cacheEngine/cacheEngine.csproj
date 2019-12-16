@@ -54,6 +54,10 @@
       <Project>{F0D17A4C-C611-49E3-A6E5-6663455BB239}</Project>
       <Name>cachCore</Name>
     </ProjectReference>
+    <ProjectReference Include="..\openingBook\openingBook.csproj">
+      <Project>{74A478B7-0308-4220-BC14-59DA7717B57A}</Project>
+      <Name>openingBook</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

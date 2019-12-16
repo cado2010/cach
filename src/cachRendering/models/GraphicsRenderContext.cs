@@ -18,5 +18,7 @@ namespace cachRendering.models
         public int BorderSize { get; set; }
 
         public Graphics Graphics { get; set; }
+
+        public Position HighlitePosition { get; set; }
     }
 }
