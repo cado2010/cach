@@ -60,6 +60,12 @@
     <Compile Include="MainForm.Designer.cs">
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="OpeningMessageForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="OpeningMessageForm.Designer.cs">
+      <DependentUpon>OpeningMessageForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Resource1.Designer.cs">
@@ -69,6 +75,9 @@
     </Compile>
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="OpeningMessageForm.resx">
+      <DependentUpon>OpeningMessageForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -95,7 +104,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
+    <None Include="App.config">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <None Include="res\bK.png" />
@@ -112,6 +123,10 @@
     <ProjectReference Include="..\cachRendering\cachRendering.csproj">
       <Project>{562124bf-20a0-4be0-8c67-5e173e86bf03}</Project>
       <Name>cachRendering</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\openingBook\openingBook.csproj">
+      <Project>{74A478B7-0308-4220-BC14-59DA7717B57A}</Project>
+      <Name>openingBook</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

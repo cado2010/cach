@@ -469,7 +469,11 @@ namespace cachCore.models
             }
             catch (CachException ex)
             {
-                _logger.Error($"Move[{pieceColor}]: Cach exception: {ex.Message} during move: {move}");
+                _logger.Error($"Move[{pieceColor}]: Cach exception: {ex.Message} during move: {move}", ex);
+
+                var fen = FENSerializer.BoardToFEN(this, pieceColor);
+                _logger.Info($"Board.Move: FEN at exception: {fen}");
+
                 return MoveErrorType.CachError;
             }
         }
@@ -506,6 +510,86 @@ namespace cachCore.models
         {
             return _boardHistory.IsMiddleGameLike();
         }
+
+        public PiecePositionHistoryItem GetLastMoveBoardHistoryItem()
+        {
+            return _boardHistory.GetLastMoveBoardHistoryItem();
+        }
+
+        public string GetPGN()
+        {
+            return _boardHistory.GetPGN();
+        }
+
+        public IList<string> GetPGNList()
+        {
+            return _boardHistory.GetPGNList();
+        }
+
+        public IList<string> GetRawPGNList()
+        {
+            return _boardHistory.GetRawPGNList();
+        }
+
+        public bool Castled(ItemColor playerColor)
+        {
+            return _boardHistory.Castled(playerColor);
+        }
+
+        /// <summary>
+        /// Sanity check on Board pieces: active pieces had better all be alive and inactive
+        /// pieces better be dead
+        /// </summary>
+        public void CheckPieceSanity()
+        {
+            try
+            {
+                foreach (var v in _pieceMap[ItemColor.White])
+                {
+                    foreach (var piece in v.Value)
+                    {
+                        if (!piece.IsAlive)
+                        {
+                            throw new CachException($"CheckPieceSanity: Active piece is dead: {piece}");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"CheckPieceSanity: Exception: {ex.Message}", ex);
+                throw ex;
+            }
+
+            //List<Piece> activePieces = GetAllActivePieces(ItemColor.White).ToList();
+            //activePieces.AddRange(GetAllActivePieces(ItemColor.Black));
+
+            //// active pieces dead check
+            //activePieces.ForEach((piece) =>
+            //{
+            //    if (!piece.IsAlive)
+            //    {
+            //        throw new CachException($"CheckPieceSanity: Active piece is dead: {piece}");
+            //    }
+            //});
+
+            //// inactive pieces are those from all material list that are not present in active piece list
+            //List<Piece> allPieces = _allMaterial[ItemColor.White];
+            //allPieces.AddRange(_allMaterial[ItemColor.Black]);
+            //List<Piece> inactivePieces = allPieces.Where(x => !activePieces.Contains(x)).ToList();
+
+            //// inactive pieces alive check
+            //inactivePieces.ForEach((piece) =>
+            //{
+            //    if (piece.IsAlive)
+            //    {
+            //        throw new CachException($"CheckPieceSanity: Inactive piece is alive: {piece}");
+            //    }
+            //});
+        }
+
+        //-------------------------------------------------------------------------------
+        // private impl
 
         /// <summary>
         /// Checks and sets game status flags based on current board position
@@ -575,29 +659,6 @@ namespace cachCore.models
                 PlayerInCheck = ItemColor.Black;
             }
         }
-
-        public string GetPGN()
-        {
-            return _boardHistory.GetPGN();
-        }
-
-        public IList<string> GetPGNList()
-        {
-            return _boardHistory.GetPGNList();
-        }
-
-        public IList<string> GetRawPGNList()
-        {
-            return _boardHistory.GetRawPGNList();
-        }
-
-        public bool Castled(ItemColor playerColor)
-        {
-            return _boardHistory.Castled(playerColor);
-        }
-
-        //-------------------------------------------------------------------------------
-        // private impl
 
         /// <summary>
         /// Initializes game board with pieces and positions
@@ -769,6 +830,11 @@ namespace cachCore.models
             if (md.Piece != null)
             {
                 return new List<Piece>() { md.Piece };
+            }
+
+            if (md.StartPosition.IsValid)
+            {
+                return new List<Piece>() { this[md.StartPosition].Piece };
             }
 
             IList<Piece> mipPieces;
@@ -991,6 +1057,8 @@ namespace cachCore.models
         /// <param name="target"></param>
         public void mMove(Piece piece, Position target)
         {
+            // _logger.Debug($"mMove: {piece} to target={target}");
+
             // remove piece from previous square
             this[piece.Position].RemovePiece();
 
@@ -1039,6 +1107,8 @@ namespace cachCore.models
 
         private void mKill(Piece piece)
         {
+            _logger.Debug($"mKill: {piece}");
+
             piece.Kill();
 
             // remove from active piece map
@@ -1048,6 +1118,8 @@ namespace cachCore.models
 
         private void mUnkill(Piece piece)
         {
+            _logger.Debug($"mUnkill: {piece}");
+
             piece.Unkill();
 
             // add to active piece map

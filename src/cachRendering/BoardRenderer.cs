@@ -106,8 +106,17 @@ namespace cachRendering
                 try
                 {
                     lastMovePosition = Position.FromAlgebraic(lastMove.Substring(lastMove.Length - 2));
-                    lmUiRow = 7 - lastMovePosition.Row;
-                    lmUiCol = lastMovePosition.Column;
+
+                    if (toPlay == ItemColor.White)
+                    {
+                        lmUiRow = 7 - lastMovePosition.Row;
+                        lmUiCol = lastMovePosition.Column;
+                    }
+                    else
+                    {
+                        lmUiRow = lastMovePosition.Row;
+                        lmUiCol = 7 - lastMovePosition.Column;
+                    }
                 }
                 catch(Exception)
                 {
@@ -136,7 +145,6 @@ namespace cachRendering
 
                     if (col == lmUiCol && row == lmUiRow)
                     {
-                        // brush = Brushes.Salmon;
                         g.DrawRectangle(_lastMovePen, loc.X, loc.Y, tileSize, tileSize);
                     }
                 }
@@ -144,8 +152,17 @@ namespace cachRendering
 
             if (highlitePosition.IsValid)
             {
-                Point loc = new Point(tileSize * highlitePosition.Column + luOffset.X + borderSize,
-                    tileSize * (7 - highlitePosition.Row) + luOffset.Y + borderSize);
+                Point loc;
+                if (toPlay == ItemColor.White)
+                {
+                    loc = new Point(tileSize * highlitePosition.Column + luOffset.X + borderSize,
+                        tileSize * (7 - highlitePosition.Row) + luOffset.Y + borderSize);
+                }
+                else
+                {
+                    loc = new Point(tileSize * (7 - highlitePosition.Column) + luOffset.X + borderSize,
+                        tileSize * highlitePosition.Row + luOffset.Y + borderSize);
+                }
                 g.DrawRectangle(_outlinePen, loc.X, loc.Y, tileSize, tileSize);
             }
 

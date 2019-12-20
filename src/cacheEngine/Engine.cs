@@ -19,7 +19,7 @@ namespace cacheEngine
         private ItemColor _opponentColor;
 
         private bool _useOpeningBook;
-        private OpeningBookNode _root;
+        private readonly OpeningBookNode _obRoot;
         private OpeningBookSearch _obSearch;
 
         private ILog _logger;
@@ -33,24 +33,37 @@ namespace cacheEngine
             public bool IsQueenSideCastle { get; set; }
         }
 
-        public Engine(Board board, ItemColor enginePlayerColor, bool useOpeningBook = true)
+        private Engine(Board board, ItemColor enginePlayerColor)
         {
             _board = board;
             _enginePlayerColor = enginePlayerColor;
             _opponentColor = BoardUtils.GetOtherColor(enginePlayerColor);
             _boardEvaluator = new BoardEvaluator();
             _logger = LogManager.GetLogger(GetType().Name);
+        }
 
+        public Engine(Board board, ItemColor enginePlayerColor, bool useOpeningBook = true) :
+            this(board, enginePlayerColor)
+        {
             _useOpeningBook = useOpeningBook;
             if (_useOpeningBook)
             {
                 OpeningBookBuilder obb = new OpeningBookBuilder();
                 obb.Read("cach_openingbook.txt");
-                _root = obb.Root;
-                _obSearch = new OpeningBookSearch(_root);
+                _obRoot = obb.Root;
+                _obSearch = new OpeningBookSearch(_obRoot);
             }
         }
 
+        public Engine(Board board, ItemColor enginePlayerColor, OpeningBookNode obRoot) :
+            this(board, enginePlayerColor)
+        {
+            _useOpeningBook = true;
+            _obRoot = obRoot;
+            _obSearch = new OpeningBookSearch(_obRoot);
+        }
+
+        public OpeningBookNode OpeningBookRoot => _obRoot;
 
         /// <summary>
         /// Searches current Board for moves at given depth and returns a list of possibilities
@@ -75,7 +88,6 @@ namespace cacheEngine
 
             List<MoveChoice> searchMoves = new List<MoveChoice>();
             MoveChoice mc = AlphaBetaPruningSearch(depth, BoardEvaluator.MinVal, BoardEvaluator.MaxVal, true, "", searchMoves);
-            // _logger.Info($"Result move: {mc}");
 
             IList<MoveChoice> filteredMoves = FilterMoves(searchMoves, mc);
 
@@ -264,7 +276,7 @@ namespace cacheEngine
         private MoveChoice AlphaBetaPruningSearch(int depth, int alpha, int beta, bool maximizingPlayer,
             string currMovePath, IList<MoveChoice> searchMoves = null)
         {
-            _logger.Debug($"ABPS: depth={depth}, alpha={alpha}, beta={beta}, maximizingPlayer={maximizingPlayer}");
+            _logger.Debug($"ABPS: Enter: depth={depth}, alpha={alpha}, beta={beta}, maximizingPlayer={maximizingPlayer}, currMovePath={currMovePath}");
 
             if (depth == 0 || _board.IsCheckMate || _board.IsStaleMate)
             {
@@ -291,9 +303,12 @@ namespace cacheEngine
 
                 foreach (var move in moves)
                 {
+                    // TODO: temp check for sanity
+                    _board.CheckPieceSanity();
+
                     if (alpha >= beta && !move.IsKill)
                     {
-                        _logger.Info($"ABPS: depth={depth}, maxzer pruning exit: alpha={alpha}, beta={beta}, currMovePath={currMovePath}");
+                        // _logger.Info($"ABPS: depth={depth}, maxzer pruning exit: alpha={alpha}, beta={beta}, currMovePath={currMovePath}");
                         break;
                     }
 
@@ -307,11 +322,11 @@ namespace cacheEngine
 
                     MoveErrorType err = _board.Move(_enginePlayerColor, mvDesc, md);
                     currMovePath = basePath + " -> " + _enginePlayerColor + ":" + mvDesc;
-                    _logger.Debug($"ABPS: maximizing: depth={depth}, trying move={currMovePath}");
+                    // _logger.Debug($"ABPS: maximizing: depth={depth}, trying move={currMovePath}");
 
                     if (err != MoveErrorType.Ok)
                     {
-                        _logger.Debug($"ABPS: error={err} in move={mvDesc}");
+                        _logger.Warn($"ABPS: error={err} in move={mvDesc}");
                         piece = prevPiece;
                         md = prevMd;
                         continue;
@@ -364,7 +379,7 @@ namespace cacheEngine
                     //}
                 }
 
-                _logger.Debug($"ABPS: depth={depth}, alpha={alpha}, beta={beta}, maxzer returning value = {value}");
+                // _logger.Debug($"ABPS: depth={depth}, alpha={alpha}, beta={beta}, maxzer returning value = {value}");
                 return new MoveChoice(null, null, value);
             }
             else
@@ -380,9 +395,12 @@ namespace cacheEngine
 
                 foreach (var move in moves)
                 {
+                    // TODO: temp check for sanity
+                    _board.CheckPieceSanity();
+
                     if (beta <= alpha && !move.IsKill)
                     {
-                        _logger.Info($"ABPS: depth={depth}, minzer pruning exit: alpha={alpha}, beta={beta}, currMovePath={currMovePath}");
+                        // _logger.Info($"ABPS: depth={depth}, minzer pruning exit: alpha={alpha}, beta={beta}, currMovePath={currMovePath}");
                         break;
                     }
 
@@ -392,11 +410,11 @@ namespace cacheEngine
 
                     MoveErrorType err = _board.Move(_opponentColor, md.Move, md);
                     currMovePath = basePath + " -> " + _opponentColor + ":" + mvDesc;
-                    _logger.Debug($"ABPS: minimizing: depth={depth}, trying move={currMovePath}");
+                    // _logger.Debug($"ABPS: minimizing: depth={depth}, trying move={currMovePath}");
 
                     if (err != MoveErrorType.Ok)
                     {
-                        _logger.Debug($"ABPS: error={err} in move={mvDesc}");
+                        _logger.Warn($"ABPS: error={err} in move={mvDesc}");
                         continue;
                     }
 
@@ -422,7 +440,7 @@ namespace cacheEngine
                     //}
                 }
 
-                _logger.Debug($"ABPS: depth={depth}, alpha={alpha}, beta={beta}, minzer returning value = {value}");
+                // _logger.Debug($"ABPS: depth={depth}, alpha={alpha}, beta={beta}, minzer returning value = {value}");
                 return new MoveChoice(null, null, value);
             }
         }

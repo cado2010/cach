@@ -98,6 +98,41 @@ namespace cachCore.models
                 else
                 {
                     string prefix = _pieceTypePrefix[PieceType];
+                    moveDesc = prefix + (IsKill ? "x" : "") + TargetPosition.ToAlgebraic();
+                }
+
+                if (IsPromotion)
+                {
+                    moveDesc += "=" + _pieceTypePrefix[PromotedPieceType];
+                }
+
+                return moveDesc;
+            }
+        }
+
+        public string MoveDescFromPosition_StartQualified
+        {
+            get
+            {
+                if (IsKingSideCastle)
+                    return "o-o";
+                else if (IsQueenSideCastle)
+                    return "o-o-o";
+                else if (IsResign)
+                    return "resign";
+
+                string moveDesc = "";
+                if (PieceType == PieceType.Pawn)
+                {
+                    if (IsKill)
+                    {
+                        moveDesc = StartPosition.ToAlgebraic()[0] + "x";
+                    }
+                    moveDesc += TargetPosition.ToAlgebraic();
+                }
+                else
+                {
+                    string prefix = _pieceTypePrefix[PieceType];
                     moveDesc = prefix + (StartPosition.IsValid ? StartPosition.ToAlgebraic() : "") +
                         (IsKill ? "x" : "") + TargetPosition.ToAlgebraic();
                 }

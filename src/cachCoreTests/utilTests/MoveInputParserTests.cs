@@ -127,6 +127,16 @@ namespace cachCoreTests
         }
 
         [Test]
+        public void ra1d1_should_return_rook_position()
+        {
+            MoveDescriptor md = new MoveInputParser(ItemColor.White, "Ra1d1").MoveDescriptor;
+            Assert.AreEqual(md.PieceType, PieceType.Rook);
+            Assert.IsFalse(md.IsKill);
+            Assert.IsTrue(md.TargetPosition.IsSame(new Position(0, 3)));
+            Assert.IsTrue(md.StartPosition.IsSame(new Position(0, 0)));
+        }
+
+        [Test]
         public void kf5_should_return_king_position()
         {
             MoveDescriptor md = new MoveInputParser(ItemColor.Black, "Kf5").MoveDescriptor;

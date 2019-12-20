@@ -2,8 +2,6 @@
 using System.Drawing;
 using System.Windows.Forms;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using log4net;
 using cachCore.models;
 using cachCore.enums;
@@ -13,6 +11,7 @@ using cachRendering;
 using cacheEngine;
 using cacheEngine.models;
 using cachCore.utils;
+using openingBook.models;
 
 namespace cach
 {
@@ -21,11 +20,14 @@ namespace cach
         private Game _game;
         private IBoardRenderer _boardRenderer;
         private Engine _engine;
+        private Engine _aidEngine;
         private Random _random;
         private ILog _logger;
 
         private bool _highlitePosition;
         private Position _hlPosition;
+
+        private OpeningBookNode _obRoot;
 
         const int tileSize = 80;
         const int gridSize = 8;
@@ -34,29 +36,19 @@ namespace cach
         // event handler of Form Load... init things here
         private void MainForm_Load(object sender, EventArgs e)
         {
-            var clr1 = Color.DarkGray;
-            var clr2 = Color.White;
-
             _game = new GameController().CreateGame();
             _boardRenderer = new BoardRenderer();
 
-            new Thread(new ThreadStart(delegate
-            {
-                var w = new Form() { Size = new Size(0, 0) };
-                Task.Delay(TimeSpan.FromSeconds(15))
-                    .ContinueWith((t) => {
-                        w.Close();
-                    }, TaskScheduler.FromCurrentSynchronizationContext());
-
-                MessageBox.Show(w,
-                  "Please wait, loading Opening Book ...",
-                  "Wait",
-                  MessageBoxButtons.OK,
-                  MessageBoxIcon.Information
-                );
-            })).Start();
+            var w = new OpeningMessageForm();
+            w.Show();
+            w.Update();
+            w.Invalidate();
 
             _engine = new Engine(_game.Board, ItemColor.Black);
+            w.Close();
+
+            _obRoot = _engine.OpeningBookRoot;
+            _aidEngine = new Engine(_game.Board, ItemColor.White, _obRoot);
 
             _random = new Random();
 
@@ -68,11 +60,11 @@ namespace cach
 
         public MainForm()
         {
-            // log4net.Config.XmlConfigurator.Configure();
             InitializeComponent();
-
             _logger = LogManager.GetLogger(GetType().Name); 
         }
+
+        public Game Game => _game;
 
         private void Render(Graphics g, ItemColor toPlay)
         {
@@ -86,6 +78,8 @@ namespace cach
                 ToPlay = toPlay,
                 HighlitePosition = _highlitePosition ? _hlPosition : Position.Invalid
             };
+
+            // _logger.Info($"Render: _highlitePosition={_highlitePosition}, _hlPosition={_hlPosition}");
             _boardRenderer.Render(grc);
 
             grc.Graphics = null;
@@ -107,7 +101,7 @@ namespace cach
         {
             try
             {
-                buttonMove.Enabled = false;
+                buttonMove.Enabled = buttonAidEngineMove.Enabled = false;
 
                 string move = textBoxMove.Text.Trim();
                 if (move != "")
@@ -136,22 +130,8 @@ namespace cach
 
                     if (moveOk && !_game.Board.IsGameOver)
                     {
-                        var moves = _engine.SearchMoves(4);
-                        if (moves.Count > 0)
+                        if (PlayEngineMove(false))
                         {
-                            int r = _random.Next(0, moves.Count);
-                            MoveChoice mc = moves[r];
-                            _logger.Info($"Engine move: {mc}");
-
-                            if (mc.FromOpeningBook)
-                            {
-                                _game.Move(mc.Move);
-                            }
-                            else
-                            {
-                                _game.Move($"{mc.MoveDescriptor.Move}", mc.MoveDescriptor);
-                            }
-
                             Invalidate();
 
                             string fen = new GameController().GetFEN(_game, ItemColor.White);
@@ -163,13 +143,56 @@ namespace cach
                 }
 
                 textBoxMove.Focus();
-                buttonMove.Enabled = true;
+                buttonMove.Enabled = buttonAidEngineMove.Enabled = true;
             }
             catch (Exception ex)
             {
                 _logger.Error($"buttonMove_Click: Exception: {ex.Message}", ex);
                 throw ex;
             }
+        }
+
+        private bool PlayEngineMove(bool aidPlayer)
+        {
+            bool result;
+            var moves = aidPlayer ? _aidEngine.SearchMoves(4) : _engine.SearchMoves(4);
+            if (moves.Count > 0)
+            {
+                int r = _random.Next(0, moves.Count);
+                MoveChoice mc = moves[r];
+                _logger.Info($"PlayEngineMove: {(aidPlayer ? "(Aiding) " : "")}Engine move={mc}");
+
+                if (mc.FromOpeningBook)
+                {
+                    _game.Move(mc.Move);
+                }
+                else
+                {
+                    _game.Move($"{mc.MoveDescriptor.Move}", mc.MoveDescriptor);
+                }
+
+                // get the last moved piece's original position and save it
+                PiecePositionHistoryItem pphi = _game.Board.GetLastMoveBoardHistoryItem();
+                if (pphi != null)
+                {
+                    _highlitePosition = true;
+                    _hlPosition = pphi.Position;
+                }
+                else
+                {
+                    _highlitePosition = false;
+                    _hlPosition = Position.Invalid;
+                }
+
+                result = true;
+            }
+            else
+            {
+                _logger.Error("PlayEngineMove: Error - no Engine move available");
+                result = false;
+            }
+
+            return result;
         }
 
         private void PopulatePGN()
@@ -208,6 +231,7 @@ namespace cach
         private bool _forceViewSet = false;
         private ItemColor _forceViewColor;
         private ItemColor _alwaysShowColor = ItemColor.White;
+        private bool _playBlack = false;
 
         private void buttonWhiteView_Click(object sender, EventArgs e)
         {
@@ -272,7 +296,14 @@ namespace cach
                 x < BorderSize + 8 * tileSize &&
                 y < BorderSize + 8 * tileSize)
             {
-                pos = new Position(7 - (y - BorderSize) / tileSize, (x - BorderSize) / tileSize);
+                if (_playBlack)
+                {
+                    pos = new Position((y - BorderSize) / tileSize, 7 - (x - BorderSize) / tileSize);
+                }
+                else
+                {
+                    pos = new Position(7 - (y - BorderSize) / tileSize, (x - BorderSize) / tileSize);
+                }
             }
 
             return pos;
@@ -286,14 +317,14 @@ namespace cach
             Invalidate();
         }
 
-        private bool IsKingSideCastle(Piece piece, Position moveTo)
+        private bool IsKingSideCastleAttempt(Piece piece, Position moveTo)
         {
             return piece.PieceType == PieceType.King &&
                 piece.Position.Column == 4 && moveTo.Column == 6;
 
         }
 
-        private bool IsQueenSideCastle(Piece piece, Position moveTo)
+        private bool IsQueenSideCastleAttempt(Piece piece, Position moveTo)
         {
             return piece.PieceType == PieceType.King &&
                 piece.Position.Column == 4 && moveTo.Column == 2;
@@ -312,8 +343,8 @@ namespace cach
                 PieceType = piece != null ? piece.PieceType : PieceType.King,
                 TargetPosition = moveTo,
                 StartPosition = _hlPosition,
-                IsKingSideCastle = IsKingSideCastle(piece, moveTo),
-                IsQueenSideCastle = IsQueenSideCastle(piece, moveTo),
+                IsKingSideCastle = IsKingSideCastleAttempt(piece, moveTo),
+                IsQueenSideCastle = IsQueenSideCastleAttempt(piece, moveTo),
                 IsKill = isKill,
                 IsDrawOffer = false,
                 IsResign = false,
@@ -325,6 +356,13 @@ namespace cach
             // set the move text and fire the Move button click
             textBoxMove.Text = md.MoveDescFromPosition;
             buttonMove_Click(null, null);
+
+            // if shorter notation doesnt work - try fully qualified notation of move
+            if (_game.LastMoveError != MoveErrorType.Ok)
+            {
+                textBoxMove.Text = md.MoveDescFromPosition_StartQualified;
+                buttonMove_Click(null, null);
+            }
         }
 
         private void MainForm_Click(object sender, EventArgs e)
@@ -342,12 +380,68 @@ namespace cach
                     else if (_highlitePosition)
                     {
                         MovePiece(pos);
-
-                        _highlitePosition = false;
-                        _hlPosition = Position.Invalid;
                     }
                 }
             }
+        }
+
+        private void buttonPlayBlack_Click(object sender, EventArgs e)
+        {
+            if (MessageBox.Show(this,
+                "This will reset the current game", "Play Black", MessageBoxButtons.OKCancel) == DialogResult.OK)
+            {
+                _playBlack = true;
+                _forceViewSet = true;
+                _forceViewColor = ItemColor.Black;
+                _alwaysShowColor = ItemColor.Black;
+
+                _game = new GameController().CreateGame();
+                _engine = new Engine(_game.Board, ItemColor.White, _obRoot);
+                _aidEngine = new Engine(_game.Board, ItemColor.Black, _obRoot);
+
+                _random = new Random();
+
+                labelNextToMove.Text = _game.ToPlay.ToString();
+                labelGameStatus.Text = "";
+
+                if (PlayEngineMove(false))
+                {
+                    Invalidate();
+
+                    string fen = new GameController().GetFEN(_game, ItemColor.White);
+                    _logger.Info($"FEN: {fen}");
+
+                    PopulatePGN();
+                }
+            }
+        }
+
+        private void buttonAidEngineMove_Click(object sender, EventArgs e)
+        {
+            buttonMove.Enabled = buttonAidEngineMove.Enabled = false;
+
+            if (PlayEngineMove(true))
+            {
+                PopulatePGN();
+                Invalidate();
+                Update();
+            }
+
+            var fen = new GameController().GetFEN(_game, _game.ToPlay);
+            _logger.Info($"FEN after 1st player: {fen}");
+
+            if (PlayEngineMove(false))
+            {
+                PopulatePGN();
+                Invalidate();
+                Update();
+            }
+
+            fen = new GameController().GetFEN(_game, _game.ToPlay);
+            _logger.Info($"FEN after 2nd player: {fen}");
+
+            textBoxMove.Focus();
+            buttonMove.Enabled = buttonAidEngineMove.Enabled = true;
         }
     }
 }

@@ -108,7 +108,7 @@ namespace cachCore.models
         {
             if (IsAlive)
             {
-                throw new CachException("Piece is alive");
+                throw new CachException($"Piece is alive: {this}");
             }
 
             IsAlive = true;
@@ -141,12 +141,17 @@ namespace cachCore.models
         {
             if (!IsAlive)
             {
-                throw new CachException("Piece is dead");
+                throw new CachException($"Piece is dead: {this}");
             }
             if (Position.IsInvalid)
             {
-                throw new CachException("Piece position is invalid: " + Position);
+                throw new CachException($"Piece position is invalid: {Position}, {this}" );
             }
+        }
+
+        public override string ToString()
+        {
+            return $"Piece: Id={Id}, PieceColor={PieceColor}, PieceType={PieceType}, Position={Position}, IsAlive={IsAlive}";
         }
     }
 }

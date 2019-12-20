@@ -121,6 +121,28 @@ namespace cachCore.models
             return hi;
         }
 
+        /// <summary>
+        /// Returns the last board move history item to get access to the original position
+        /// of the last moved piece
+        /// </summary>
+        /// <returns></returns>
+        public PiecePositionHistoryItem GetLastMoveBoardHistoryItem()
+        {
+            PiecePositionHistoryItem pphi = null;
+
+            foreach (var bhi in _boardHistoryStack)
+            {
+                PiecePositionHistoryItem item = bhi as PiecePositionHistoryItem;
+                if (item != null)
+                {
+                    pphi = item;
+                    break;
+                }
+            }
+
+            return pphi;
+        }
+
         public string GetPGN()
         {
             string pgn = "";

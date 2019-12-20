@@ -42,6 +42,8 @@
             this.buttonUndo = new System.Windows.Forms.Button();
             this.buttonDumpFEN = new System.Windows.Forms.Button();
             this.listBoxPGN = new System.Windows.Forms.ListBox();
+            this.buttonPlayBlack = new System.Windows.Forms.Button();
+            this.buttonAidEngineMove = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // label1
@@ -73,7 +75,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(327, 703);
+            this.label2.Location = new System.Drawing.Point(459, 703);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(53, 13);
             this.label2.TabIndex = 0;
@@ -82,7 +84,7 @@
             // labelNextToMove
             // 
             this.labelNextToMove.AutoSize = true;
-            this.labelNextToMove.Location = new System.Drawing.Point(386, 703);
+            this.labelNextToMove.Location = new System.Drawing.Point(518, 703);
             this.labelNextToMove.Name = "labelNextToMove";
             this.labelNextToMove.Size = new System.Drawing.Size(68, 13);
             this.labelNextToMove.TabIndex = 0;
@@ -91,7 +93,7 @@
             // labelGameStatus
             // 
             this.labelGameStatus.AutoSize = true;
-            this.labelGameStatus.Location = new System.Drawing.Point(517, 703);
+            this.labelGameStatus.Location = new System.Drawing.Point(518, 732);
             this.labelGameStatus.Name = "labelGameStatus";
             this.labelGameStatus.Size = new System.Drawing.Size(156, 13);
             this.labelGameStatus.TabIndex = 0;
@@ -100,7 +102,7 @@
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(473, 703);
+            this.label4.Location = new System.Drawing.Point(474, 732);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(38, 13);
             this.label4.TabIndex = 0;
@@ -153,7 +155,7 @@
             // 
             this.buttonUndo.Location = new System.Drawing.Point(254, 698);
             this.buttonUndo.Name = "buttonUndo";
-            this.buttonUndo.Size = new System.Drawing.Size(54, 23);
+            this.buttonUndo.Size = new System.Drawing.Size(75, 23);
             this.buttonUndo.TabIndex = 5;
             this.buttonUndo.Text = "Undo";
             this.buttonUndo.UseVisualStyleBackColor = true;
@@ -161,7 +163,7 @@
             // 
             // buttonDumpFEN
             // 
-            this.buttonDumpFEN.Location = new System.Drawing.Point(254, 727);
+            this.buttonDumpFEN.Location = new System.Drawing.Point(335, 727);
             this.buttonDumpFEN.Name = "buttonDumpFEN";
             this.buttonDumpFEN.Size = new System.Drawing.Size(100, 23);
             this.buttonDumpFEN.TabIndex = 4;
@@ -181,11 +183,32 @@
             this.listBoxPGN.Size = new System.Drawing.Size(287, 756);
             this.listBoxPGN.TabIndex = 6;
             // 
+            // buttonPlayBlack
+            // 
+            this.buttonPlayBlack.Location = new System.Drawing.Point(254, 727);
+            this.buttonPlayBlack.Name = "buttonPlayBlack";
+            this.buttonPlayBlack.Size = new System.Drawing.Size(75, 23);
+            this.buttonPlayBlack.TabIndex = 7;
+            this.buttonPlayBlack.Text = "Play Black";
+            this.buttonPlayBlack.UseVisualStyleBackColor = true;
+            this.buttonPlayBlack.Click += new System.EventHandler(this.buttonPlayBlack_Click);
+            // 
+            // buttonAidEngineMove
+            // 
+            this.buttonAidEngineMove.Location = new System.Drawing.Point(335, 698);
+            this.buttonAidEngineMove.Name = "buttonAidEngineMove";
+            this.buttonAidEngineMove.Size = new System.Drawing.Size(100, 23);
+            this.buttonAidEngineMove.TabIndex = 2;
+            this.buttonAidEngineMove.Text = "Aid Engine Move";
+            this.buttonAidEngineMove.UseVisualStyleBackColor = true;
+            this.buttonAidEngineMove.Click += new System.EventHandler(this.buttonAidEngineMove_Click);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(991, 780);
+            this.Controls.Add(this.buttonPlayBlack);
             this.Controls.Add(this.listBoxPGN);
             this.Controls.Add(this.buttonUndo);
             this.Controls.Add(this.buttonDumpFEN);
@@ -193,6 +216,7 @@
             this.Controls.Add(this.checkBoxAlwaysCurrent);
             this.Controls.Add(this.buttonBlackView);
             this.Controls.Add(this.buttonWhiteView);
+            this.Controls.Add(this.buttonAidEngineMove);
             this.Controls.Add(this.buttonMove);
             this.Controls.Add(this.textBoxMove);
             this.Controls.Add(this.label4);
@@ -227,6 +251,8 @@
         private System.Windows.Forms.Button buttonUndo;
         private System.Windows.Forms.Button buttonDumpFEN;
         private System.Windows.Forms.ListBox listBoxPGN;
+        private System.Windows.Forms.Button buttonPlayBlack;
+        private System.Windows.Forms.Button buttonAidEngineMove;
     }
 }
 
