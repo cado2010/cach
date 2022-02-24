@@ -1,0 +1,14 @@
+version: 0.2
+phases:
+  pre_build:
+    commands:
+      - echo Restore started on `date`
+      - dotnet restore src/cachEngine/cachEngine.csproj
+  build:
+    commands:
+      - echo Build started on `date`
+      - dotnet publish -c release -o ./build_output src/cachEngine/cachEngine.csproj
+artifacts:
+  files:
+    - ./**/*
+  base-directory: './build_output'
