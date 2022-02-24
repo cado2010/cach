@@ -3,11 +3,11 @@ phases:
   pre_build:
     commands:
       - echo Restore started on `date`
-      - dotnet restore src/cachEngine/cachEngine.csproj
+      - dotnet restore src/cacheEngine/cacheEngine.csproj
   build:
     commands:
       - echo Build started on `date`
-      - dotnet publish -c release -o ./build_output src/cachEngine/cachEngine.csproj
+      - dotnet publish -c release -o ./build_output src/cacheEngine/cacheEngine.csproj
 artifacts:
   files:
     - ./**/*
